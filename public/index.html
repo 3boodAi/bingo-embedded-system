@@ -13,8 +13,21 @@
     <button id="join-btn" style="padding: 10px 20px; background: #00e5ff; color: #000; font-weight: bold; cursor: pointer; border-radius: 5px;">Join Game</button>
   </div>
   
-  <div id="game-screen" style="display: none;">
+  <div id="game-screen" style="display: none; flex-direction: column; align-items: center; padding-top: 50px;">
+    <h1 style="color: #00e5ff; margin-bottom: 10px;">IoT INTERACTIVE BINGO</h1>
+    
+    <div id="status-panel" style="display: flex; justify-content: space-between; width: 350px; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
+      <span id="player-display">Player: </span>
+      <span id="timer-display">Time: 00:00</span>
     </div>
+
+    <h2 id="latest-number" style="color: #00e5ff; margin-bottom: 20px;">Latest Number: Waiting...</h2>
+
+    <div id="bingo-grid" class="grid-container" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
+      </div>
+
+    <button id="claim-btn" style="padding: 15px 30px; background: #00e5ff; color: #000; font-weight: bold; font-size: 1.2rem; cursor: pointer; border-radius: 25px; border: none; box-shadow: 0 0 10px #00e5ff;" disabled>CLAIM BINGO</button>
+  </div>
   
   <div id="victory-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
     <h1 style="color: #00e5ff;">BINGO! We have a WINNER!</h1>

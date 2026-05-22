@@ -1,5 +1,4 @@
-const socket = io; // Note: Not invoked yet.
-let socketInstance;
+let socket;
 let playerName = '';
 let startTime;
 let gameTimer;
@@ -11,35 +10,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const victoryScreen = document.getElementById('victory-screen');
 
     document.getElementById('join-btn').addEventListener('click', () => {
-  const nameInput = document.getElementById('player-name-input').value.trim();
-  if (!nameInput) {
-    alert("Please enter a name!");
-    return;
-  }
-  playerName = nameInput;
+      const nameInput = document.getElementById('player-name-input').value.trim();
+      if (!nameInput) {
+        alert("Please enter a name!");
+        return;
+      }
+      playerName = nameInput;
+      document.getElementById('player-display').textContent = 'Player: ' + playerName;
 
-  // 1. Unblock browser audio policy with a silent utterance
-  window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+      // 1. Unblock browser audio policy with a silent utterance
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
 
-  // 2. Switch UI screens
-  document.getElementById('lobby-screen').style.display = 'none';
-  document.getElementById('game-screen').style.display = 'block';
+      // 2. Switch UI screens
+      document.getElementById('lobby-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display = 'flex';
 
-  // 3. Connect to server
-  socket = io();
-  
-  // 4. Start the local timer (assuming startGameTimer() exists)
-  if (typeof startGameTimer === 'function') startGameTimer();
-});
+      // 3. Connect to server
+      socket = io();
 
-    document.getElementById('claimBingoBtn').addEventListener('click', () => {
+      socket.on('connect', () => {
+          socket.emit('register_player');
+      });
+
+      const handleNewNumber = (data) => {
+          const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+          calledNumbers.push(Number(num));
+          document.getElementById('latest-number').textContent = `Latest Number: ${num}`;
+          speakNumber(num);
+      };
+
+      socket.on('new_number', handleNewNumber);
+      socket.on('number_generated', handleNewNumber);
+
+      socket.on('game_over', (data) => {
+          clearInterval(gameTimer);
+          
+          gameScreen.style.display = 'none';
+          victoryScreen.style.display = 'flex';
+          
+          const winnerName = data.winner || 'Unknown';
+          const winTime = data.time || 0;
+          
+          document.getElementById('winner-info').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
+
+          if ('speechSynthesis' in window) {
+              const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
+              utterance.pitch = 1.2;
+              utterance.rate = 1.1;
+              window.speechSynthesis.speak(utterance);
+          }
+      });
+      
+      // 4. Start the local timer and initialize the board
+      startTime = Date.now();
+      initGame();
+    });
+
+    document.getElementById('claim-btn').addEventListener('click', () => {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance("BINGO! You won!");
             window.speechSynthesis.speak(utterance);
         }
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        if (socketInstance) {
-            socketInstance.emit('bingo_claimed', { name: playerName, time: elapsedTime });
+        if (socket) {
+            socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
         }
     });
 });
@@ -55,7 +89,7 @@ function startTimer() {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
         const secs = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('gameTimer').textContent = `${mins}:${secs}`;
+        document.getElementById('timer-display').textContent = `Time: ${mins}:${secs}`;
     }, 1000);
 }
 
@@ -68,7 +102,7 @@ function generateBingoNumbers() {
 }
 
 function renderBoard(numbers) {
-    const board = document.getElementById('bingoBoard');
+    const board = document.getElementById('bingo-grid');
     board.innerHTML = ''; 
     
     numbers.forEach((number, index) => {
@@ -103,21 +137,7 @@ function checkClaimEligibility() {
     if ([0, 6, 12, 18, 24].every(isMarked)) hasBingo = true;
     if ([4, 8, 12, 16, 20].every(isMarked)) hasBingo = true;
 
-    document.getElementById('claimBingoBtn').disabled = !hasBingo;
-}
-
-function displayNewNumber(num) {
-    let displayEl = document.getElementById('latestNumberDisplay');
-    if (!displayEl) {
-        displayEl = document.createElement('div');
-        displayEl.id = 'latestNumberDisplay';
-        displayEl.style.fontSize = '1.5rem';
-        displayEl.style.color = 'var(--accent-color)';
-        displayEl.style.textAlign = 'center';
-        displayEl.style.marginBottom = '15px';
-        document.querySelector('.status-panel').insertAdjacentElement('afterend', displayEl);
-    }
-    displayEl.textContent = `Latest Number: ${num}`;
+    document.getElementById('claim-btn').disabled = !hasBingo;
 }
 
 function speakNumber(num) {
