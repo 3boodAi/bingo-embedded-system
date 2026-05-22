@@ -7,10 +7,59 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="lobby-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: #00e5ff;">IoT BINGO</h1>
-    <input type="text" id="player-name-input" placeholder="Enter your name" style="padding: 10px; margin-bottom: 15px; border-radius: 5px;">
-    <button id="join-btn" style="padding: 10px 20px; background: #00e5ff; color: #000; font-weight: bold; cursor: pointer; border-radius: 5px;">Join Game</button>
+  <!-- Main Menu -->
+  <div id="main-menu-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+    <h1 style="color: var(--accent-color, #00e5ff); font-size: 4rem; margin-bottom: 40px; text-shadow: 0 0 20px rgba(0, 210, 255, 0.6);">IoT BINGO</h1>
+    <button id="nav-play-btn" class="menu-btn">Play</button>
+    <button id="nav-settings-btn" class="menu-btn">Settings</button>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;">
+    <div style="background: var(--panel-bg, #1e1e1e); padding: 30px; border-radius: 12px; color: var(--text-color, #e0e0e0); text-align: center; border: 2px solid var(--accent-color, #00d2ff);">
+      <h2 style="color: var(--accent-color, #00d2ff); margin-top: 0;">Settings</h2>
+      <div style="margin: 20px 0;">
+        <button id="theme-toggle-btn" class="menu-btn" style="width: auto; padding: 10px 20px;">Toggle Light/Dark</button>
+      </div>
+      <div style="margin: 20px 0;">
+        <label style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Grid Size</label>
+        <select id="grid-size-select" style="padding: 10px; font-size: 1.1rem; border-radius: 5px; background: var(--bg-color, #121212); color: var(--text-color, #e0e0e0); border: 1px solid var(--accent-color, #00d2ff);">
+          <option value="3">3x3</option>
+          <option value="4">4x4</option>
+          <option value="5" selected>5x5</option>
+        </select>
+      </div>
+      <button id="close-settings-btn" class="menu-btn" style="width: auto; margin-top: 10px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Mode Select -->
+  <div id="mode-select-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 40px;">Select Mode</h1>
+    <button id="mode-sp-btn" class="menu-btn">Single Player</button>
+    <button id="mode-mp-btn" class="menu-btn">Multiplayer</button>
+    <button id="back-to-menu-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
+  </div>
+
+  <!-- Multiplayer Name -->
+  <div id="name-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 40px;">Multiplayer</h1>
+    <input type="text" id="player-name-input" placeholder="Enter your name" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--accent-color, #00d2ff); background: var(--panel-bg, #1e1e1e); color: var(--text-color, white); text-align: center; font-size: 1.2rem; outline: none; width: 250px;">
+    <button id="join-lobby-btn" class="menu-btn">Join Lobby</button>
+    <button id="back-to-mode-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
+  </div>
+
+  <!-- Waiting Room -->
+  <div id="waiting-room-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Waiting Room</h1>
+    <div id="player-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 300px; height: 200px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
+      <p style="text-align: center; color: #888;">No players yet...</p>
+    </div>
+    <label style="font-size: 1.2rem; color: var(--text-color, #e0e0e0); margin-bottom: 20px; display: flex; align-items: center; cursor: pointer;">
+      <input type="checkbox" id="ready-checkbox" style="width: 20px; height: 20px; margin-right: 10px;">
+      I am ready
+    </label>
+    <button id="start-game-btn" class="menu-btn">Start Game</button>
   </div>
   
   <div id="game-screen" style="display: none; flex-direction: column; align-items: center; padding-top: 50px;">

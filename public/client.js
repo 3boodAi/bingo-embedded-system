@@ -5,65 +5,118 @@ let gameTimer;
 let calledNumbers = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    const lobbyScreen = document.getElementById('lobby-screen');
+    const mainMenuScreen = document.getElementById('main-menu-screen');
+    const settingsModal = document.getElementById('settings-modal');
+    const modeSelectScreen = document.getElementById('mode-select-screen');
+    const nameScreen = document.getElementById('name-screen');
+    const waitingRoomScreen = document.getElementById('waiting-room-screen');
     const gameScreen = document.getElementById('game-screen');
     const victoryScreen = document.getElementById('victory-screen');
 
-    document.getElementById('join-btn').addEventListener('click', () => {
-      const nameInput = document.getElementById('player-name-input').value.trim();
-      if (!nameInput) {
-        alert("Please enter a name!");
-        return;
-      }
-      playerName = nameInput;
-      document.getElementById('player-display').textContent = 'Player: ' + playerName;
+    function hideAllScreens() {
+        mainMenuScreen.style.display = 'none';
+        modeSelectScreen.style.display = 'none';
+        nameScreen.style.display = 'none';
+        waitingRoomScreen.style.display = 'none';
+        gameScreen.style.display = 'none';
+        victoryScreen.style.display = 'none';
+    }
 
-      // 1. Unblock browser audio policy with a silent utterance
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    document.getElementById('nav-play-btn').addEventListener('click', () => {
+        hideAllScreens();
+        modeSelectScreen.style.display = 'flex';
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        }
+    });
 
-      // 2. Switch UI screens
-      document.getElementById('lobby-screen').style.display = 'none';
-      document.getElementById('game-screen').style.display = 'flex';
+    document.getElementById('nav-settings-btn').addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+    });
 
-      // 3. Connect to server
-      socket = io();
+    document.getElementById('close-settings-btn').addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+    });
 
-      socket.on('connect', () => {
-          socket.emit('register_player');
-      });
+    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+        document.body.classList.toggle('light-theme');
+    });
 
-      const handleNewNumber = (data) => {
-          const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
-          calledNumbers.push(Number(num));
-          document.getElementById('latest-number').textContent = `Latest Number: ${num}`;
-          speakNumber(num);
-      };
+    document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+        hideAllScreens();
+        mainMenuScreen.style.display = 'flex';
+    });
 
-      socket.on('new_number', handleNewNumber);
-      socket.on('number_generated', handleNewNumber);
+    document.getElementById('mode-sp-btn').addEventListener('click', () => {
+        alert("Single player mode coming soon!");
+    });
 
-      socket.on('game_over', (data) => {
-          clearInterval(gameTimer);
-          
-          gameScreen.style.display = 'none';
-          victoryScreen.style.display = 'flex';
-          
-          const winnerName = data.winner || 'Unknown';
-          const winTime = data.time || 0;
-          
-          document.getElementById('winner-info').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
+    document.getElementById('mode-mp-btn').addEventListener('click', () => {
+        hideAllScreens();
+        nameScreen.style.display = 'flex';
+    });
 
-          if ('speechSynthesis' in window) {
-              const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
-              utterance.pitch = 1.2;
-              utterance.rate = 1.1;
-              window.speechSynthesis.speak(utterance);
-          }
-      });
-      
-      // 4. Start the local timer and initialize the board
-      startTime = Date.now();
-      initGame();
+    document.getElementById('back-to-mode-btn').addEventListener('click', () => {
+        hideAllScreens();
+        modeSelectScreen.style.display = 'flex';
+    });
+
+    document.getElementById('join-lobby-btn').addEventListener('click', () => {
+        const nameInput = document.getElementById('player-name-input').value.trim();
+        if (!nameInput) {
+            alert("Please enter a name!");
+            return;
+        }
+        playerName = nameInput;
+        document.getElementById('player-display').textContent = 'Player: ' + playerName;
+
+        hideAllScreens();
+        waitingRoomScreen.style.display = 'flex';
+    });
+
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        hideAllScreens();
+        gameScreen.style.display = 'flex';
+
+        // 3. Connect to server
+        socket = io();
+
+        socket.on('connect', () => {
+            socket.emit('register_player');
+        });
+
+        const handleNewNumber = (data) => {
+            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+            calledNumbers.push(Number(num));
+            document.getElementById('latest-number').textContent = `Latest Number: ${num}`;
+            speakNumber(num);
+        };
+
+        socket.on('new_number', handleNewNumber);
+        socket.on('number_generated', handleNewNumber);
+
+        socket.on('game_over', (data) => {
+            clearInterval(gameTimer);
+            
+            gameScreen.style.display = 'none';
+            victoryScreen.style.display = 'flex';
+            
+            const winnerName = data.winner || 'Unknown';
+            const winTime = data.time || 0;
+            
+            document.getElementById('winner-info').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
+                utterance.pitch = 1.2;
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+        
+        // 4. Start the local timer and initialize the board
+        startTime = Date.now();
+        initGame();
     });
 
     document.getElementById('claim-btn').addEventListener('click', () => {
