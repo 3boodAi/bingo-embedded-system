@@ -270,3 +270,8 @@ body.light-theme {
     box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6);
     filter: brightness(1.2);
 }
+
+@keyframes pulseGlow { 0% { box-shadow: 0 0 5px #00e5ff; } 50% { box-shadow: 0 0 20px #00e5ff; transform: scale(1.05); } 100% { box-shadow: 0 0 5px #00e5ff; } }
+.grid-container div { transition: all 0.2s ease; border: 1px solid #333; background: linear-gradient(145deg, #222, #111); font-size: 1.5rem; font-weight: bold; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 60px; color: white; }
+.grid-container div:hover { background: #333; transform: scale(1.05); }
+.grid-container div.marked { background: #00e5ff; color: #000; animation: pulseGlow 1.5s infinite; border: none; }

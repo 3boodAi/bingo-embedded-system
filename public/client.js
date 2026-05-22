@@ -156,6 +156,7 @@ function renderBoard(numbers, size) {
     board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
     board.style.gridTemplateRows = `repeat(${size}, 1fr)`;
     board.innerHTML = ''; 
+    document.getElementById('bingo-grid').style.gridTemplateColumns = 'repeat(' + currentGridSize + ', 1fr)';
     
     numbers.forEach((number, index) => {
         const cell = document.createElement('div');
