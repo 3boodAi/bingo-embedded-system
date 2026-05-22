@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
     socket.on('bingo_claimed', (data) => {
         console.log(`Bingo claimed by player ${socket.id}`, data);
         // Broadcast to all clients that someone has won
-        io.emit('game_over', { winner: socket.id, name: data.name, time: data.time });
+        io.emit('game_over', { winner: data.name, time: data.time });
     });
 
     // Handle disconnect

@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gameScreen.style.display = 'none';
             victoryScreen.style.display = 'flex';
             
-            const winnerName = data.name || data.data?.name || 'Unknown';
-            const winTime = data.time || data.data?.time || 0;
+            const winnerName = data.winner || 'Unknown';
+            const winTime = data.time || 0;
             
             document.getElementById('victory-message').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
 
@@ -107,7 +107,8 @@ function renderBoard(numbers) {
         cell.dataset.index = index;
         
         cell.addEventListener('click', () => {
-            if (!calledNumbers.includes(Number(number))) return;
+            const cellNum = parseInt(cell.innerText);
+            if (!calledNumbers.includes(cellNum)) return;
             cell.classList.toggle('marked');
             checkClaimEligibility();
         });
