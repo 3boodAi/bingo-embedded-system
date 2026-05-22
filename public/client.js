@@ -131,31 +131,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+let currentGridSize = 5;
+
 function initGame() {
-    const bingoNumbers = generateBingoNumbers();
-    renderBoard(bingoNumbers);
+    const sizeSelect = document.getElementById('grid-size-select');
+    if (sizeSelect) {
+        currentGridSize = parseInt(sizeSelect.value, 10);
+    }
+    const bingoNumbers = generateBingoNumbers(currentGridSize * currentGridSize);
+    renderBoard(bingoNumbers, currentGridSize);
     startTimer();
 }
 
-function startTimer() {
-    gameTimer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        const secs = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('timer-display').textContent = `Time: ${mins}:${secs}`;
-    }, 1000);
-}
-
-function generateBingoNumbers() {
+function generateBingoNumbers(count) {
     const numbers = new Set();
-    while (numbers.size < 25) {
+    while (numbers.size < count) {
         numbers.add(Math.floor(Math.random() * 100));
     }
     return Array.from(numbers);
 }
 
-function renderBoard(numbers) {
+function renderBoard(numbers, size) {
     const board = document.getElementById('bingo-grid');
+    board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    board.style.gridTemplateRows = `repeat(${size}, 1fr)`;
     board.innerHTML = ''; 
     
     numbers.forEach((number, index) => {
@@ -163,32 +162,51 @@ function renderBoard(numbers) {
         cell.className = 'bingo-cell';
         cell.textContent = number;
         cell.dataset.index = index;
+        cell.style.animationDelay = `${index * 0.03}s`; // Staggered popIn animation
         
         cell.addEventListener('click', () => {
             const cellNum = parseInt(cell.innerText);
             if (!calledNumbers.includes(cellNum)) return;
             cell.classList.toggle('marked');
-            checkClaimEligibility();
+            checkClaimEligibility(size);
         });
         
         board.appendChild(cell);
     });
 }
 
-function checkClaimEligibility() {
+function checkClaimEligibility(size) {
     const cells = Array.from(document.querySelectorAll('.bingo-cell'));
     const isMarked = (idx) => cells[idx].classList.contains('marked');
     
     let hasBingo = false;
 
-    for (let r = 0; r < 5; r++) {
-        if ([0, 1, 2, 3, 4].every(c => isMarked(r * 5 + c))) hasBingo = true;
+    // Check rows
+    for (let r = 0; r < size; r++) {
+        let rowWin = true;
+        for (let c = 0; c < size; c++) {
+            if (!isMarked(r * size + c)) rowWin = false;
+        }
+        if (rowWin) hasBingo = true;
     }
-    for (let c = 0; c < 5; c++) {
-        if ([0, 1, 2, 3, 4].every(r => isMarked(r * 5 + c))) hasBingo = true;
+    
+    // Check columns
+    for (let c = 0; c < size; c++) {
+        let colWin = true;
+        for (let r = 0; r < size; r++) {
+            if (!isMarked(r * size + c)) colWin = false;
+        }
+        if (colWin) hasBingo = true;
     }
-    if ([0, 6, 12, 18, 24].every(isMarked)) hasBingo = true;
-    if ([4, 8, 12, 16, 20].every(isMarked)) hasBingo = true;
+    
+    // Check diagonals
+    let diag1Win = true;
+    let diag2Win = true;
+    for (let i = 0; i < size; i++) {
+        if (!isMarked(i * size + i)) diag1Win = false;
+        if (!isMarked(i * size + (size - 1 - i))) diag2Win = false;
+    }
+    if (diag1Win || diag2Win) hasBingo = true;
 
     document.getElementById('claim-btn').disabled = !hasBingo;
 }
