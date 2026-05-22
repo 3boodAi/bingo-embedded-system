@@ -3,6 +3,7 @@ const socket = io();
 let playerName = '';
 let startTime = Date.now();
 let timerInterval;
+let calledNumbers = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     initGame();
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleNewNumber = (data) => {
         const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+        calledNumbers.push(Number(num));
         displayNewNumber(num);
         speakNumber(num);
     };
@@ -25,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('claimBingoBtn').addEventListener('click', () => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance("BINGO! You won!");
+            window.speechSynthesis.speak(utterance);
+        }
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
         socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
     });
@@ -74,6 +80,7 @@ function renderBoard(numbers) {
         cell.dataset.index = index;
         
         cell.addEventListener('click', () => {
+            if (!calledNumbers.includes(Number(number))) return;
             cell.classList.toggle('marked');
             checkClaimEligibility();
         });
