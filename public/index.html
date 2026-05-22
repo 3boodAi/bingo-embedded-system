@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Interactive Bingo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>IoT Interactive Bingo</h1>
+        </header>
+        
+        <section class="status-panel">
+            <div class="player-info">Player: <span id="playerName">Waiting...</span></div>
+            <div class="timer">Time: <span id="gameTimer">00:00</span></div>
+        </section>
+
+        <main>
+            <div id="bingoBoard" class="bingo-grid">
+                <!-- Grid cells will be generated dynamically by client.js -->
+            </div>
+            <div class="actions">
+                <button id="claimBingoBtn" disabled>Claim BINGO</button>
+            </div>
+        </main>
+    </div>
+    <script src="client.js"></script>
+</body>
+</html>

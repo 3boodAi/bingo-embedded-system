@@ -1,0 +1,130 @@
+:root {
+    --bg-color: #121212;
+    --panel-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --accent-color: #00d2ff;
+    --accent-hover: #3a7bd5;
+    --marked-bg: rgba(0, 210, 255, 0.2);
+    --marked-border: #00d2ff;
+    --border-radius: 12px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    padding: 25px;
+    box-sizing: border-box;
+    background-color: var(--panel-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+header h1 {
+    text-align: center;
+    margin-top: 0;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.8rem;
+    text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+}
+
+.status-panel {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-panel span {
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 8px;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 25px;
+}
+
+.bingo-cell {
+    background-color: #2a2a2a;
+    border: 2px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    user-select: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.bingo-cell:hover {
+    border-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.bingo-cell.marked {
+    background-color: var(--marked-bg);
+    border-color: var(--marked-border);
+    color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4) inset, 0 0 10px rgba(0, 210, 255, 0.2);
+    transform: scale(0.95);
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+}
+
+button#claimBingoBtn {
+    background: linear-gradient(135deg, var(--accent-hover), var(--accent-color));
+    color: #121212;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    border-radius: 30px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+}
+
+button#claimBingoBtn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+button#claimBingoBtn:not(:disabled):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 210, 255, 0.5);
+}
