@@ -11,55 +11,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const victoryScreen = document.getElementById('victory-screen');
 
     document.getElementById('join-btn').addEventListener('click', () => {
-        const inputName = document.getElementById('player-name-input').value.trim();
-        playerName = inputName || "Player_" + Math.floor(Math.random() * 1000);
-        document.getElementById('playerName').textContent = playerName;
+  const nameInput = document.getElementById('player-name-input').value.trim();
+  if (!nameInput) {
+    alert("Please enter a name!");
+    return;
+  }
+  playerName = nameInput;
 
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        }
+  // 1. Unblock browser audio policy with a silent utterance
+  window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
 
-        lobbyScreen.style.display = 'none';
-        gameScreen.style.display = 'flex';
+  // 2. Switch UI screens
+  document.getElementById('lobby-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
 
-        socketInstance = io();
-
-        socketInstance.on('connect', () => {
-            socketInstance.emit('register_player');
-        });
-
-        const handleNewNumber = (data) => {
-            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
-            calledNumbers.push(Number(num));
-            displayNewNumber(num);
-            speakNumber(num);
-        };
-
-        socketInstance.on('new_number', handleNewNumber);
-        socketInstance.on('number_generated', handleNewNumber);
-
-        socketInstance.on('game_over', (data) => {
-            clearInterval(gameTimer);
-            
-            gameScreen.style.display = 'none';
-            victoryScreen.style.display = 'flex';
-            
-            const winnerName = data.winner || 'Unknown';
-            const winTime = data.time || 0;
-            
-            document.getElementById('victory-message').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
-
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
-                utterance.pitch = 1.2;
-                utterance.rate = 1.1;
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-
-        startTime = Date.now();
-        initGame();
-    });
+  // 3. Connect to server
+  socket = io();
+  
+  // 4. Start the local timer (assuming startGameTimer() exists)
+  if (typeof startGameTimer === 'function') startGameTimer();
+});
 
     document.getElementById('claimBingoBtn').addEventListener('click', () => {
         if ('speechSynthesis' in window) {
