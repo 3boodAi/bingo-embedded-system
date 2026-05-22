@@ -1,50 +1,78 @@
-document.addEventListener('DOMContentLoaded', () => {
-    initGame();
-});
+const socket = io();
 
 let playerName = '';
+let startTime = Date.now();
+let timerInterval;
+
+document.addEventListener('DOMContentLoaded', () => {
+    initGame();
+
+    socket.on('connect', () => {
+        socket.emit('register_player');
+    });
+
+    const handleNewNumber = (data) => {
+        const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+        displayNewNumber(num);
+        speakNumber(num);
+    };
+
+    socket.on('new_number', handleNewNumber);
+    socket.on('number_generated', handleNewNumber);
+
+    socket.on('game_over', (data) => {
+        alert(`Game Over! Winner: ${data.winner || data.data?.name || 'Unknown'}`);
+    });
+
+    document.getElementById('claimBingoBtn').addEventListener('click', () => {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
+    });
+});
 
 function initGame() {
     promptForName();
     const bingoNumbers = generateBingoNumbers();
     renderBoard(bingoNumbers);
+    startTimer();
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('gameTimer').textContent = `${mins}:${secs}`;
+    }, 1000);
 }
 
 function promptForName() {
-    // Prompt the user for their name via standard browser prompt
     let name = prompt("Welcome to IoT Interactive Bingo!\nPlease enter your name:");
-    
-    // Fallback if they cancel or enter empty string
     if (!name || name.trim() === "") {
         name = "Player_" + Math.floor(Math.random() * 1000);
     }
-    
     playerName = name.trim();
     document.getElementById('playerName').textContent = playerName;
 }
 
 function generateBingoNumbers() {
     const numbers = new Set();
-    
-    // Generate 25 unique random numbers between 0 and 99
     while (numbers.size < 25) {
-        const randomNum = Math.floor(Math.random() * 100);
-        numbers.add(randomNum);
+        numbers.add(Math.floor(Math.random() * 100));
     }
-    
     return Array.from(numbers);
 }
 
 function renderBoard(numbers) {
     const board = document.getElementById('bingoBoard');
-    board.innerHTML = ''; // Clear the board before rendering
+    board.innerHTML = ''; 
     
-    numbers.forEach(number => {
+    numbers.forEach((number, index) => {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
         cell.textContent = number;
+        cell.dataset.index = index;
         
-        // Add click listener to toggle the marked state visually
         cell.addEventListener('click', () => {
             cell.classList.toggle('marked');
             checkClaimEligibility();
@@ -55,15 +83,40 @@ function renderBoard(numbers) {
 }
 
 function checkClaimEligibility() {
-    // Basic logic just to turn the claim button on/off if items are marked.
-    // Real validation would happen later in the phases.
-    const markedCells = document.querySelectorAll('.bingo-cell.marked');
-    const claimBtn = document.getElementById('claimBingoBtn');
+    const cells = Array.from(document.querySelectorAll('.bingo-cell'));
+    const isMarked = (idx) => cells[idx].classList.contains('marked');
     
-    // Arbitrary check for demonstration: enable if at least 5 cells are marked
-    if (markedCells.length >= 5) {
-        claimBtn.disabled = false;
-    } else {
-        claimBtn.disabled = true;
+    let hasBingo = false;
+
+    for (let r = 0; r < 5; r++) {
+        if ([0, 1, 2, 3, 4].every(c => isMarked(r * 5 + c))) hasBingo = true;
+    }
+    for (let c = 0; c < 5; c++) {
+        if ([0, 1, 2, 3, 4].every(r => isMarked(r * 5 + c))) hasBingo = true;
+    }
+    if ([0, 6, 12, 18, 24].every(isMarked)) hasBingo = true;
+    if ([4, 8, 12, 16, 20].every(isMarked)) hasBingo = true;
+
+    document.getElementById('claimBingoBtn').disabled = !hasBingo;
+}
+
+function displayNewNumber(num) {
+    let displayEl = document.getElementById('latestNumberDisplay');
+    if (!displayEl) {
+        displayEl = document.createElement('div');
+        displayEl.id = 'latestNumberDisplay';
+        displayEl.style.fontSize = '1.5rem';
+        displayEl.style.color = 'var(--accent-color)';
+        displayEl.style.textAlign = 'center';
+        displayEl.style.marginBottom = '15px';
+        document.querySelector('.status-panel').insertAdjacentElement('afterend', displayEl);
+    }
+    displayEl.textContent = `Latest Number: ${num}`;
+}
+
+function speakNumber(num) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(`Number ${num}`);
+        window.speechSynthesis.speak(utterance);
     }
 }
