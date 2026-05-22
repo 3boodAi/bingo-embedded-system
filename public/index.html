@@ -7,34 +7,41 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>IoT Interactive Bingo</h1>
-        </header>
-        
-        <section class="status-panel">
-            <div class="player-info">Player: <span id="playerName">Waiting...</span></div>
-            <div class="timer">Time: <span id="gameTimer">00:00</span></div>
-        </section>
-
-        <main>
-            <div id="bingoBoard" class="bingo-grid">
-                <!-- Grid cells will be generated dynamically by client.js -->
-            </div>
-            <div class="actions">
-                <button id="claimBingoBtn" disabled>Claim BINGO</button>
-            </div>
-        </main>
+    <div id="lobby-screen" class="screen-container">
+        <h1 class="logo">IoT BINGO</h1>
+        <input type="text" id="player-name-input" placeholder="Enter Player Name">
+        <button id="join-btn">Join Multiplayer Game</button>
     </div>
-    <!-- Victory Modal -->
-    <div id="victoryModal" class="modal hidden">
-        <div class="modal-content">
-            <h2>🎉 BINGO! 🎉</h2>
-            <p>We have a winner!</p>
-            <p class="winner-name" id="winnerNameDisplay"></p>
-            <p class="winner-time" id="winnerTimeDisplay"></p>
+
+    <div id="game-screen" style="display: none;" class="screen-container">
+        <div class="container">
+            <header>
+                <h1>IoT Interactive Bingo</h1>
+            </header>
+            
+            <section class="status-panel">
+                <div class="player-info">Player: <span id="playerName">Waiting...</span></div>
+                <div class="timer">Time: <span id="gameTimer">00:00</span></div>
+            </section>
+
+            <main>
+                <div id="bingoBoard" class="bingo-grid">
+                    <!-- Grid cells will be generated dynamically by client.js -->
+                </div>
+                <div class="actions">
+                    <button id="claimBingoBtn" disabled>Claim BINGO</button>
+                </div>
+            </main>
         </div>
     </div>
+
+    <div id="victory-screen" style="display: none;" class="screen-container">
+        <div class="modal-content">
+            <h2>Leaderboard / Victory</h2>
+            <p id="victory-message"></p>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
 </body>

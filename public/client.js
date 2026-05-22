@@ -1,45 +1,64 @@
-const socket = io();
-
+const socket = io; // Note: Not invoked yet.
+let socketInstance;
 let playerName = '';
-let startTime = Date.now();
-let timerInterval;
+let startTime;
+let gameTimer;
 let calledNumbers = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    initGame();
+    const lobbyScreen = document.getElementById('lobby-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const victoryScreen = document.getElementById('victory-screen');
 
-    socket.on('connect', () => {
-        socket.emit('register_player');
-    });
-
-    const handleNewNumber = (data) => {
-        const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
-        calledNumbers.push(Number(num));
-        displayNewNumber(num);
-        speakNumber(num);
-    };
-
-    socket.on('new_number', handleNewNumber);
-    socket.on('number_generated', handleNewNumber);
-
-    socket.on('game_over', (data) => {
-        clearInterval(timerInterval);
-        document.getElementById('bingoBoard').style.pointerEvents = 'none';
-        document.getElementById('claimBingoBtn').disabled = true;
-        
-        const winnerName = data.name || data.data?.name || 'Unknown';
-        const winTime = data.time || data.data?.time || 0;
-        
-        document.getElementById('winnerNameDisplay').textContent = `Winner: ${winnerName}`;
-        document.getElementById('winnerTimeDisplay').textContent = `Time: ${winTime} seconds`;
-        document.getElementById('victoryModal').classList.remove('hidden');
+    document.getElementById('join-btn').addEventListener('click', () => {
+        const inputName = document.getElementById('player-name-input').value.trim();
+        playerName = inputName || "Player_" + Math.floor(Math.random() * 1000);
+        document.getElementById('playerName').textContent = playerName;
 
         if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(`BINGO! We have a WINNER! Congratulations to ${winnerName}!`);
-            utterance.pitch = 1.2;
-            utterance.rate = 1.1;
-            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
         }
+
+        lobbyScreen.style.display = 'none';
+        gameScreen.style.display = 'flex';
+
+        socketInstance = io();
+
+        socketInstance.on('connect', () => {
+            socketInstance.emit('register_player');
+        });
+
+        const handleNewNumber = (data) => {
+            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+            calledNumbers.push(Number(num));
+            displayNewNumber(num);
+            speakNumber(num);
+        };
+
+        socketInstance.on('new_number', handleNewNumber);
+        socketInstance.on('number_generated', handleNewNumber);
+
+        socketInstance.on('game_over', (data) => {
+            clearInterval(gameTimer);
+            
+            gameScreen.style.display = 'none';
+            victoryScreen.style.display = 'flex';
+            
+            const winnerName = data.name || data.data?.name || 'Unknown';
+            const winTime = data.time || data.data?.time || 0;
+            
+            document.getElementById('victory-message').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
+                utterance.pitch = 1.2;
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+
+        startTime = Date.now();
+        initGame();
     });
 
     document.getElementById('claimBingoBtn').addEventListener('click', () => {
@@ -48,33 +67,25 @@ document.addEventListener('DOMContentLoaded', () => {
             window.speechSynthesis.speak(utterance);
         }
         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
+        if (socketInstance) {
+            socketInstance.emit('bingo_claimed', { name: playerName, time: elapsedTime });
+        }
     });
 });
 
 function initGame() {
-    promptForName();
     const bingoNumbers = generateBingoNumbers();
     renderBoard(bingoNumbers);
     startTimer();
 }
 
 function startTimer() {
-    timerInterval = setInterval(() => {
+    gameTimer = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
         const secs = String(elapsed % 60).padStart(2, '0');
         document.getElementById('gameTimer').textContent = `${mins}:${secs}`;
     }, 1000);
-}
-
-function promptForName() {
-    let name = prompt("Welcome to IoT Interactive Bingo!\nPlease enter your name:");
-    if (!name || name.trim() === "") {
-        name = "Player_" + Math.floor(Math.random() * 1000);
-    }
-    playerName = name.trim();
-    document.getElementById('playerName').textContent = playerName;
 }
 
 function generateBingoNumbers() {
