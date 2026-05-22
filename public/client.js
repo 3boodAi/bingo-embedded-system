@@ -23,7 +23,23 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('number_generated', handleNewNumber);
 
     socket.on('game_over', (data) => {
-        alert(`Game Over! Winner: ${data.winner || data.data?.name || 'Unknown'}`);
+        clearInterval(timerInterval);
+        document.getElementById('bingoBoard').style.pointerEvents = 'none';
+        document.getElementById('claimBingoBtn').disabled = true;
+        
+        const winnerName = data.name || data.data?.name || 'Unknown';
+        const winTime = data.time || data.data?.time || 0;
+        
+        document.getElementById('winnerNameDisplay').textContent = `Winner: ${winnerName}`;
+        document.getElementById('winnerTimeDisplay').textContent = `Time: ${winTime} seconds`;
+        document.getElementById('victoryModal').classList.remove('hidden');
+
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(`BINGO! We have a WINNER! Congratulations to ${winnerName}!`);
+            utterance.pitch = 1.2;
+            utterance.rate = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
     });
 
     document.getElementById('claimBingoBtn').addEventListener('click', () => {
