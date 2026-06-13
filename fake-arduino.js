@@ -1,6 +1,6 @@
 const { io } = require("socket.io-client");
 
-const socket = io("https://bingo-embedded-system.onrender.com/");
+const socket = io(process.env.SERVER_URL || "http://localhost:3000/");
 
 socket.on("connect", () => {
     console.log("Fake Arduino Connected to Server!");

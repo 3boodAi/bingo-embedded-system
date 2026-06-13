@@ -2,8 +2,9 @@
   "name": "bingo-embedded-system",
   "version": "1.0.0",
   "description": "This is an embedded systems academic project for Bahçeşehir University. It implements an Interactive Bingo System connecting a physical hardware board with a web-based client interface.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -14,6 +15,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.0.0 <25.0.0"
+  },
   "bugs": {
     "url": "https://github.com/3boodAi/bingo-embedded-system/issues"
   },
