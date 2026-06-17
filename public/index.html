@@ -45,8 +45,27 @@
   <div id="name-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
     <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 40px;">Multiplayer</h1>
     <input type="text" id="player-name-input" placeholder="Enter your name" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--accent-color, #00d2ff); background: var(--panel-bg, #1e1e1e); color: var(--text-color, white); text-align: center; font-size: 1.2rem; outline: none; width: 250px;">
-    <button id="join-lobby-btn" class="menu-btn">Join Lobby</button>
+    <button id="continue-name-btn" class="menu-btn">Continue</button>
     <button id="back-to-mode-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
+  </div>
+
+  <!-- Lobby Browser Screen -->
+  <div id="lobby-browser-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; width: 100%;">
+    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Lobby Browser</h1>
+    <div id="lobbies-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 400px; height: 300px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
+      <p style="text-align: center; color: #888;">No active lobbies...</p>
+    </div>
+    <button id="create-lobby-btn" class="menu-btn">Create Lobby</button>
+    <button id="back-to-name-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
+  </div>
+l  <!-- Lobby Browser Screen -->
+  <div id="lobby-browser-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center: height: 100vh; width: 100%;">
+    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Lobby Browser</h1>
+    <div id="lobbies-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 400px; height: 300px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
+      <p style="text-align: center; color: #888;">No active lobbies...</p>
+    </div>
+    <button id="create-lobby-btn" class="menu-btn">Create Lobby</button>
+    <button id="back-to-name-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
   </div>
 
   <!-- Waiting Room -->

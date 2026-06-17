@@ -1,14 +1,16 @@
-let socket;
+﻿let socket;
 let playerName = '';
 let startTime;
 let gameTimer;
 let calledNumbers = [];
+let currentLobby = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const settingsModal = document.getElementById('settings-modal');
     const modeSelectScreen = document.getElementById('mode-select-screen');
     const nameScreen = document.getElementById('name-screen');
+    const lobbyBrowserScreen = document.getElementById('lobby-browser-screen');
     const waitingRoomScreen = document.getElementById('waiting-room-screen');
     const gameScreen = document.getElementById('game-screen');
     const victoryScreen = document.getElementById('victory-screen');
@@ -17,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mainMenuScreen.style.display = 'none';
         modeSelectScreen.style.display = 'none';
         nameScreen.style.display = 'none';
+        if (lobbyBrowserScreen) lobbyBrowserScreen.style.display = 'none';
         waitingRoomScreen.style.display = 'none';
         gameScreen.style.display = 'none';
         victoryScreen.style.display = 'none';
@@ -61,62 +64,48 @@ document.addEventListener('DOMContentLoaded', () => {
         modeSelectScreen.style.display = 'flex';
     });
 
-    document.getElementById('join-lobby-btn').addEventListener('click', () => {
-        const nameInput = document.getElementById('player-name-input').value.trim();
-        if (!nameInput) {
-            alert("Please enter a name!");
-            return;
-        }
-        playerName = nameInput;
-        document.getElementById('player-display').textContent = 'Player: ' + playerName;
+    const continueBtn = document.getElementById('continue-name-btn');
+    if(continueBtn) {
+        continueBtn.addEventListener('click', () => {
+            const nameInput = document.getElementById('player-name-input').value.trim();
+            if (!nameInput) {
+                alert("Please enter a name!");
+                return;
+            }
+            playerName = nameInput;
+            document.getElementById('player-display').textContent = 'Player: ' + playerName;
 
-        hideAllScreens();
-        waitingRoomScreen.style.display = 'flex';
-    });
+            if (!socket) {
+                socket = io();
+                setupSocketListeners();
+            }
 
-    document.getElementById('start-game-btn').addEventListener('click', () => {
-        hideAllScreens();
-        gameScreen.style.display = 'flex';
-
-        // 3. Connect to server
-        socket = io();
-
-        socket.on('connect', () => {
-            socket.emit('register_player');
+            hideAllScreens();
+            if (lobbyBrowserScreen) lobbyBrowserScreen.style.display = 'flex';
         });
+    }
 
-        const handleNewNumber = (data) => {
-            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
-            calledNumbers.push(Number(num));
-            document.getElementById('latest-number').textContent = `Latest Number: ${num}`;
-            speakNumber(num);
-        };
+    const backToNameBtn = document.getElementById('back-to-name-btn');
+    if (backToNameBtn) {
+        backToNameBtn.addEventListener('click', () => {
+            hideAllScreens();
+            nameScreen.style.display = 'flex';
+        });
+    }
 
-        socket.on('new_number', handleNewNumber);
-        socket.on('number_generated', handleNewNumber);
-
-        socket.on('game_over', (data) => {
-            clearInterval(gameTimer);
-            
-            gameScreen.style.display = 'none';
-            victoryScreen.style.display = 'flex';
-            
-            const winnerName = data.winner || 'Unknown';
-            const winTime = data.time || 0;
-            
-            document.getElementById('winner-info').innerHTML = `Winner: ${winnerName}<br><br>Time: ${winTime} seconds`;
-
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(`BINGO! We have a winner!`);
-                utterance.pitch = 1.2;
-                utterance.rate = 1.1;
-                window.speechSynthesis.speak(utterance);
+    const createLobbyBtn = document.getElementById('create-lobby-btn');
+    if (createLobbyBtn) {
+        createLobbyBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.emit('create_lobby', { playerName: playerName });
             }
         });
-        
-        // 4. Start the local timer and initialize the board
-        startTime = Date.now();
-        initGame();
+    }
+
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        if (socket) {
+            socket.emit('start_game');
+        }
     });
 
     document.getElementById('claim-btn').addEventListener('click', () => {
@@ -129,6 +118,107 @@ document.addEventListener('DOMContentLoaded', () => {
             socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
         }
     });
+
+    function setupSocketListeners() {
+        socket.on('lobbies_update', (lobbies) => {
+            const listContainer = document.getElementById('lobbies-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+            
+            if (lobbies.length === 0) {
+                listContainer.innerHTML = '<p style="text-align: center; color: #888;">No active lobbies...</p>';
+                return;
+            }
+
+            lobbies.forEach(lobby => {
+                const item = document.createElement('div');
+                item.className = 'lobby-item';
+                const disabledStr = (lobby.gameActive || lobby.players.length >= lobby.maxPlayers) ? 'disabled' : '';
+                item.innerHTML = '<span>' + lobby.name + ' - ' + lobby.players.length + '/' + lobby.maxPlayers + '</span>' +
+                                 '<button class="lobby-join-btn" data-id="' + lobby.id + '" ' + disabledStr + '>Join</button>';
+                listContainer.appendChild(item);
+            });
+
+            document.querySelectorAll('.lobby-join-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const lobbyId = e.target.getAttribute('data-id');
+                    socket.emit('join_lobby', { lobbyId, playerName });
+                });
+            });
+        });
+
+        socket.on('lobby_joined', (lobby) => {
+            currentLobby = lobby;
+            hideAllScreens();
+            waitingRoomScreen.style.display = 'flex';
+            updateWaitingRoom(lobby);
+        });
+
+        socket.on('lobby_updated', (lobby) => {
+            currentLobby = lobby;
+            if (waitingRoomScreen.style.display === 'flex' || waitingRoomScreen.style.display === 'block') {
+                updateWaitingRoom(lobby);
+            }
+        });
+
+        socket.on('lobby_error', (data) => {
+            alert(data.message);
+        });
+
+        socket.on('game_started', () => {
+            hideAllScreens();
+            gameScreen.style.display = 'flex';
+            startTime = Date.now();
+            initGame();
+        });
+
+        const handleNewNumber = (data) => {
+            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
+            calledNumbers.push(Number(num));
+            document.getElementById('latest-number').textContent = 'Latest Number: ' + num;
+            speakNumber(num);
+        };
+
+        socket.on('new_number', handleNewNumber);
+
+        socket.on('game_over', (data) => {
+            clearInterval(gameTimer);
+            
+            gameScreen.style.display = 'none';
+            victoryScreen.style.display = 'flex';
+            
+            const winnerName = data.winner || 'Unknown';
+            const winTime = data.time || 0;
+            
+            document.getElementById('winner-info').innerHTML = 'Winner: ' + winnerName + '<br><br>Time: ' + winTime + ' seconds';
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("BINGO! We have a winner!");
+                utterance.pitch = 1.2;
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+    }
+
+    function updateWaitingRoom(lobby) {
+        if (!lobby) return;
+        const playerList = document.getElementById('player-list');
+        playerList.innerHTML = '';
+        lobby.players.forEach(p => {
+            const pEl = document.createElement('p');
+            pEl.textContent = p.name + (p.id === lobby.leader ? ' (Leader)' : '');
+            pEl.style.margin = '5px 0';
+            playerList.appendChild(pEl);
+        });
+
+        const startBtn = document.getElementById('start-game-btn');
+        if (socket.id === lobby.leader) {
+            startBtn.style.display = 'block';
+        } else {
+            startBtn.style.display = 'none';
+        }
+    }
 });
 
 let currentGridSize = 5;
@@ -143,6 +233,15 @@ function initGame() {
     startTimer();
 }
 
+function startTimer() {
+    gameTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('timer-display').textContent = 'Time: ' + mins + ':' + secs;
+    }, 1000);
+}
+
 function generateBingoNumbers(count) {
     const numbers = new Set();
     while (numbers.size < count) {
@@ -153,17 +252,16 @@ function generateBingoNumbers(count) {
 
 function renderBoard(numbers, size) {
     const board = document.getElementById('bingo-grid');
-    board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-    board.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+    board.style.gridTemplateColumns = 'repeat(' + size + ', 1fr)';
+    board.style.gridTemplateRows = 'repeat(' + size + ', 1fr)';
     board.innerHTML = ''; 
-    document.getElementById('bingo-grid').style.gridTemplateColumns = 'repeat(' + currentGridSize + ', 1fr)';
     
     numbers.forEach((number, index) => {
         const cell = document.createElement('div');
         cell.className = 'bingo-cell';
         cell.textContent = number;
         cell.dataset.index = index;
-        cell.style.animationDelay = `${index * 0.03}s`; // Staggered popIn animation
+        cell.style.animationDelay = (index * 0.03) + 's'; 
         
         cell.addEventListener('click', () => {
             const cellNum = parseInt(cell.innerText);
@@ -182,7 +280,6 @@ function checkClaimEligibility(size) {
     
     let hasBingo = false;
 
-    // Check rows
     for (let r = 0; r < size; r++) {
         let rowWin = true;
         for (let c = 0; c < size; c++) {
@@ -191,7 +288,6 @@ function checkClaimEligibility(size) {
         if (rowWin) hasBingo = true;
     }
     
-    // Check columns
     for (let c = 0; c < size; c++) {
         let colWin = true;
         for (let r = 0; r < size; r++) {
@@ -200,7 +296,6 @@ function checkClaimEligibility(size) {
         if (colWin) hasBingo = true;
     }
     
-    // Check diagonals
     let diag1Win = true;
     let diag2Win = true;
     for (let i = 0; i < size; i++) {
@@ -214,7 +309,7 @@ function checkClaimEligibility(size) {
 
 function speakNumber(num) {
     if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(`Number ${num}`);
+        const utterance = new SpeechSynthesisUtterance('Number ' + num);
         window.speechSynthesis.speak(utterance);
     }
 }
