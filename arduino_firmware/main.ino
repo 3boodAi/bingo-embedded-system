@@ -16,10 +16,11 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <FastLED.h>
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 #include <LittleFS.h>
 #include <WebSocketsClient.h>
 #include <WiFi.h>
+#include <Wire.h>
 
 // ---------- Wi-Fi and server ----------
 const char* WIFI_SSID = "YOUR_WIFI_NAME";
@@ -30,12 +31,9 @@ const char* WS_PATH = "/hardware";
 const bool WS_USE_SSL = true;
 
 // ---------- ESP32 pin definitions ----------
-const uint8_t LCD_RS = 14;
-const uint8_t LCD_EN = 27;
-const uint8_t LCD_D4 = 26;
-const uint8_t LCD_D5 = 25;
-const uint8_t LCD_D6 = 33;
-const uint8_t LCD_D7 = 32;
+const uint8_t I2C_SDA_PIN = 21;
+const uint8_t I2C_SCL_PIN = 22;
+const uint8_t LCD_I2C_ADDRESS = 0x27; // Common values are 0x27 and 0x3F.
 
 const uint8_t BUZZER_PIN = 13;
 const uint8_t LED_PIN = 23;
@@ -57,7 +55,7 @@ const unsigned long LONG_PRESS_MS = 5000;
 const unsigned long DEBOUNCE_MS = 35;
 const char* SCORE_FILE = "/scores.csv";
 
-LiquidCrystal lcd(LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
+LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 16, 2);
 HardwareSerial dfSerial(2);
 WebSocketsClient webSocket;
 CRGB leds[LED_COUNT];
@@ -164,7 +162,9 @@ void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
-  lcd.begin(16, 2);
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  lcd.init();
+  lcd.backlight();
   showLcd("Bingo Arcade", "Booting...");
 
   FastLED.addLeds<WS2812B, LED_PIN, GRB>(leds, LED_COUNT);

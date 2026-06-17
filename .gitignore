@@ -10,3 +10,6 @@ Thumbs.db
 *.bin
 build/
 .vscode/
+
+# Generated/local audio backups
+audio/backup/
