@@ -1,108 +1,90 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Interactive Bingo</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <!-- Main Menu -->
-  <div id="main-menu-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: var(--accent-color, #00e5ff); font-size: 4rem; margin-bottom: 40px; text-shadow: 0 0 20px rgba(0, 210, 255, 0.6);">IoT BINGO</h1>
-    <button id="nav-play-btn" class="menu-btn">Play</button>
-    <button id="nav-settings-btn" class="menu-btn">Settings</button>
-  </div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bingo Game Arcade</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Arcade status">
+        <div>
+          <p class="eyebrow">Sultan • Hussam • Abdullah</p>
+          <h1>Bingo Game Arcade</h1>
+        </div>
+        <div class="status-strip">
+          <span id="socket-status" class="status-pill warn">Connecting</span>
+          <span id="hardware-status" class="status-pill warn">Console offline</span>
+        </div>
+      </section>
 
-  <!-- Settings Modal -->
-  <div id="settings-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;">
-    <div style="background: var(--panel-bg, #1e1e1e); padding: 30px; border-radius: 12px; color: var(--text-color, #e0e0e0); text-align: center; border: 2px solid var(--accent-color, #00d2ff);">
-      <h2 style="color: var(--accent-color, #00d2ff); margin-top: 0;">Settings</h2>
-      <div style="margin: 20px 0;">
-        <button id="theme-toggle-btn" class="menu-btn" style="width: auto; padding: 10px 20px;">Toggle Light/Dark</button>
-      </div>
-      <div style="margin: 20px 0;">
-        <label style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Grid Size</label>
-        <select id="grid-size-select" style="padding: 10px; font-size: 1.1rem; border-radius: 5px; background: var(--bg-color, #121212); color: var(--text-color, #e0e0e0); border: 1px solid var(--accent-color, #00d2ff);">
-          <option value="3">3x3</option>
-          <option value="4">4x4</option>
-          <option value="5" selected>5x5</option>
-        </select>
-      </div>
-      <button id="close-settings-btn" class="menu-btn" style="width: auto; margin-top: 10px;">Close</button>
-    </div>
-  </div>
+      <section id="join-screen" class="panel active" aria-labelledby="join-title">
+        <div class="panel-header">
+          <p class="eyebrow">Arcade lobby</p>
+          <h2 id="join-title">Join the shoebox console</h2>
+        </div>
+        <form id="join-form" class="join-form">
+          <label for="player-name">Player name</label>
+          <div class="form-row">
+            <input id="player-name" name="playerName" autocomplete="name" maxlength="14" placeholder="Your name" required>
+            <button type="submit">Join</button>
+          </div>
+        </form>
+        <p id="join-message" class="message"></p>
+      </section>
 
-  <!-- Mode Select -->
-  <div id="mode-select-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 40px;">Select Mode</h1>
-    <button id="mode-sp-btn" class="menu-btn">Single Player</button>
-    <button id="mode-mp-btn" class="menu-btn">Multiplayer</button>
-    <button id="back-to-menu-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
-  </div>
+      <section id="lobby-screen" class="panel" aria-labelledby="lobby-title">
+        <div class="panel-header">
+          <p class="eyebrow">Waiting room</p>
+          <h2 id="lobby-title">Three players, one console</h2>
+        </div>
+        <div id="players-list" class="players-list"></div>
+        <div class="lobby-actions">
+          <label class="ready-toggle">
+            <input id="ready-toggle" type="checkbox">
+            <span>I am ready</span>
+          </label>
+          <button id="start-button" type="button" disabled>Start Game</button>
+          <button id="reset-lobby-button" type="button" class="secondary">Reset</button>
+        </div>
+        <p id="lobby-message" class="message"></p>
+      </section>
 
-  <!-- Multiplayer Name -->
-  <div id="name-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 40px;">Multiplayer</h1>
-    <input type="text" id="player-name-input" placeholder="Enter your name" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--accent-color, #00d2ff); background: var(--panel-bg, #1e1e1e); color: var(--text-color, white); text-align: center; font-size: 1.2rem; outline: none; width: 250px;">
-    <button id="continue-name-btn" class="menu-btn">Continue</button>
-    <button id="back-to-mode-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
-  </div>
+      <section id="countdown-screen" class="panel center" aria-live="polite">
+        <p class="eyebrow">Hands on cards</p>
+        <h2 id="countdown-value">3</h2>
+        <p>The arcade console is starting the round.</p>
+      </section>
 
-  <!-- Lobby Browser Screen -->
-  <div id="lobby-browser-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; width: 100%;">
-    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Lobby Browser</h1>
-    <div id="lobbies-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 400px; height: 300px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
-      <p style="text-align: center; color: #888;">No active lobbies...</p>
-    </div>
-    <button id="create-lobby-btn" class="menu-btn">Create Lobby</button>
-    <button id="back-to-name-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
-  </div>
-l  <!-- Lobby Browser Screen -->
-  <div id="lobby-browser-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center: height: 100vh; width: 100%;">
-    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Lobby Browser</h1>
-    <div id="lobbies-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 400px; height: 300px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
-      <p style="text-align: center; color: #888;">No active lobbies...</p>
-    </div>
-    <button id="create-lobby-btn" class="menu-btn">Create Lobby</button>
-    <button id="back-to-name-btn" class="menu-btn" style="background: #555; color: white;">Back</button>
-  </div>
+      <section id="game-screen" class="game-layout" aria-labelledby="game-title">
+        <div class="game-info">
+          <div>
+            <p class="eyebrow">Active game</p>
+            <h2 id="game-title">Watch the console for numbers</h2>
+          </div>
+          <div class="metrics">
+            <span id="timer-display">00:00</span>
+            <span id="called-count">0 called</span>
+          </div>
+        </div>
+        <div id="bingo-card" class="bingo-card" aria-label="Bingo card"></div>
+        <div class="game-actions">
+          <button id="claim-button" type="button" disabled>Claim Bingo</button>
+          <button id="reset-game-button" type="button" class="secondary">Reset</button>
+        </div>
+        <p id="game-message" class="message"></p>
+      </section>
 
-  <!-- Waiting Room -->
-  <div id="waiting-room-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: var(--accent-color, #00e5ff); margin-bottom: 20px;">Waiting Room</h1>
-    <div id="player-list" style="background: var(--panel-bg, #1e1e1e); border: 2px solid var(--accent-color, #00d2ff); border-radius: 8px; width: 300px; height: 200px; padding: 15px; overflow-y: auto; margin-bottom: 20px; color: var(--text-color, #e0e0e0);">
-      <p style="text-align: center; color: #888;">No players yet...</p>
-    </div>
-    <label style="font-size: 1.2rem; color: var(--text-color, #e0e0e0); margin-bottom: 20px; display: flex; align-items: center; cursor: pointer;">
-      <input type="checkbox" id="ready-checkbox" style="width: 20px; height: 20px; margin-right: 10px;">
-      I am ready
-    </label>
-    <button id="start-game-btn" class="menu-btn">Start Game</button>
-  </div>
-  
-  <div id="game-screen" style="display: none; flex-direction: column; align-items: center; padding-top: 50px;">
-    <h1 style="color: #00e5ff; margin-bottom: 10px;">IoT INTERACTIVE BINGO</h1>
-    
-    <div id="status-panel" style="display: flex; justify-content: space-between; width: 350px; background: #222; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: white;">
-      <span id="player-display">Player: </span>
-      <span id="timer-display">Time: 00:00</span>
-    </div>
+      <section id="winner-screen" class="panel center" aria-live="polite">
+        <p class="eyebrow">Game over</p>
+        <h2 id="winner-title">Bingo!</h2>
+        <p id="winner-detail" class="winner-detail"></p>
+        <button id="play-again-button" type="button">Back to Lobby</button>
+      </section>
+    </main>
 
-    <h2 id="latest-number" style="color: #00e5ff; margin-bottom: 20px;">Latest Number: Waiting...</h2>
-
-    <div id="bingo-grid" class="grid-container" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
-      </div>
-
-    <button id="claim-btn" style="padding: 15px 30px; background: #00e5ff; color: #000; font-weight: bold; font-size: 1.2rem; cursor: pointer; border-radius: 25px; border: none; box-shadow: 0 0 10px #00e5ff;" disabled>CLAIM BINGO</button>
-  </div>
-  
-  <div id="victory-screen" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-    <h1 style="color: #00e5ff;">BINGO! We have a WINNER!</h1>
-    <h2 id="winner-info" style="color: white;"></h2>
-  </div>
-  
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
-</body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/client.js"></script>
+  </body>
 </html>

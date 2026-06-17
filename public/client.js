@@ -1,315 +1,310 @@
-﻿let socket;
-let playerName = '';
-let startTime;
-let gameTimer;
-let calledNumbers = [];
-let currentLobby = null;
+const socket = io();
 
-document.addEventListener('DOMContentLoaded', () => {
-    const mainMenuScreen = document.getElementById('main-menu-screen');
-    const settingsModal = document.getElementById('settings-modal');
-    const modeSelectScreen = document.getElementById('mode-select-screen');
-    const nameScreen = document.getElementById('name-screen');
-    const lobbyBrowserScreen = document.getElementById('lobby-browser-screen');
-    const waitingRoomScreen = document.getElementById('waiting-room-screen');
-    const gameScreen = document.getElementById('game-screen');
-    const victoryScreen = document.getElementById('victory-screen');
+const screens = {
+  join: document.getElementById('join-screen'),
+  lobby: document.getElementById('lobby-screen'),
+  countdown: document.getElementById('countdown-screen'),
+  game: document.getElementById('game-screen'),
+  winner: document.getElementById('winner-screen'),
+};
 
-    function hideAllScreens() {
-        mainMenuScreen.style.display = 'none';
-        modeSelectScreen.style.display = 'none';
-        nameScreen.style.display = 'none';
-        if (lobbyBrowserScreen) lobbyBrowserScreen.style.display = 'none';
-        waitingRoomScreen.style.display = 'none';
-        gameScreen.style.display = 'none';
-        victoryScreen.style.display = 'none';
-    }
+const state = {
+  lobby: null,
+  player: null,
+  marked: new Set([12]),
+  timer: null,
+  countdownTimer: null,
+  countdownEndsAt: null,
+};
 
-    document.getElementById('nav-play-btn').addEventListener('click', () => {
-        hideAllScreens();
-        modeSelectScreen.style.display = 'flex';
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        }
-    });
+const elements = {
+  socketStatus: document.getElementById('socket-status'),
+  hardwareStatus: document.getElementById('hardware-status'),
+  joinForm: document.getElementById('join-form'),
+  playerName: document.getElementById('player-name'),
+  joinMessage: document.getElementById('join-message'),
+  lobbyMessage: document.getElementById('lobby-message'),
+  gameMessage: document.getElementById('game-message'),
+  playersList: document.getElementById('players-list'),
+  readyToggle: document.getElementById('ready-toggle'),
+  startButton: document.getElementById('start-button'),
+  resetLobbyButton: document.getElementById('reset-lobby-button'),
+  resetGameButton: document.getElementById('reset-game-button'),
+  countdownValue: document.getElementById('countdown-value'),
+  bingoCard: document.getElementById('bingo-card'),
+  timerDisplay: document.getElementById('timer-display'),
+  calledCount: document.getElementById('called-count'),
+  claimButton: document.getElementById('claim-button'),
+  winnerTitle: document.getElementById('winner-title'),
+  winnerDetail: document.getElementById('winner-detail'),
+  playAgainButton: document.getElementById('play-again-button'),
+};
 
-    document.getElementById('nav-settings-btn').addEventListener('click', () => {
-        settingsModal.style.display = 'flex';
-    });
+elements.playerName.value = localStorage.getItem('bingo.playerName') || '';
 
-    document.getElementById('close-settings-btn').addEventListener('click', () => {
-        settingsModal.style.display = 'none';
-    });
-
-    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
-        document.body.classList.toggle('light-theme');
-    });
-
-    document.getElementById('back-to-menu-btn').addEventListener('click', () => {
-        hideAllScreens();
-        mainMenuScreen.style.display = 'flex';
-    });
-
-    document.getElementById('mode-sp-btn').addEventListener('click', () => {
-        alert("Single player mode coming soon!");
-    });
-
-    document.getElementById('mode-mp-btn').addEventListener('click', () => {
-        hideAllScreens();
-        nameScreen.style.display = 'flex';
-    });
-
-    document.getElementById('back-to-mode-btn').addEventListener('click', () => {
-        hideAllScreens();
-        modeSelectScreen.style.display = 'flex';
-    });
-
-    const continueBtn = document.getElementById('continue-name-btn');
-    if(continueBtn) {
-        continueBtn.addEventListener('click', () => {
-            const nameInput = document.getElementById('player-name-input').value.trim();
-            if (!nameInput) {
-                alert("Please enter a name!");
-                return;
-            }
-            playerName = nameInput;
-            document.getElementById('player-display').textContent = 'Player: ' + playerName;
-
-            if (!socket) {
-                socket = io();
-                setupSocketListeners();
-            }
-
-            hideAllScreens();
-            if (lobbyBrowserScreen) lobbyBrowserScreen.style.display = 'flex';
-        });
-    }
-
-    const backToNameBtn = document.getElementById('back-to-name-btn');
-    if (backToNameBtn) {
-        backToNameBtn.addEventListener('click', () => {
-            hideAllScreens();
-            nameScreen.style.display = 'flex';
-        });
-    }
-
-    const createLobbyBtn = document.getElementById('create-lobby-btn');
-    if (createLobbyBtn) {
-        createLobbyBtn.addEventListener('click', () => {
-            if (socket) {
-                socket.emit('create_lobby', { playerName: playerName });
-            }
-        });
-    }
-
-    document.getElementById('start-game-btn').addEventListener('click', () => {
-        if (socket) {
-            socket.emit('start_game');
-        }
-    });
-
-    document.getElementById('claim-btn').addEventListener('click', () => {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance("BINGO! You won!");
-            window.speechSynthesis.speak(utterance);
-        }
-        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        if (socket) {
-            socket.emit('bingo_claimed', { name: playerName, time: elapsedTime });
-        }
-    });
-
-    function setupSocketListeners() {
-        socket.on('lobbies_update', (lobbies) => {
-            const listContainer = document.getElementById('lobbies-list');
-            if (!listContainer) return;
-            listContainer.innerHTML = '';
-            
-            if (lobbies.length === 0) {
-                listContainer.innerHTML = '<p style="text-align: center; color: #888;">No active lobbies...</p>';
-                return;
-            }
-
-            lobbies.forEach(lobby => {
-                const item = document.createElement('div');
-                item.className = 'lobby-item';
-                const disabledStr = (lobby.gameActive || lobby.players.length >= lobby.maxPlayers) ? 'disabled' : '';
-                item.innerHTML = '<span>' + lobby.name + ' - ' + lobby.players.length + '/' + lobby.maxPlayers + '</span>' +
-                                 '<button class="lobby-join-btn" data-id="' + lobby.id + '" ' + disabledStr + '>Join</button>';
-                listContainer.appendChild(item);
-            });
-
-            document.querySelectorAll('.lobby-join-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const lobbyId = e.target.getAttribute('data-id');
-                    socket.emit('join_lobby', { lobbyId, playerName });
-                });
-            });
-        });
-
-        socket.on('lobby_joined', (lobby) => {
-            currentLobby = lobby;
-            hideAllScreens();
-            waitingRoomScreen.style.display = 'flex';
-            updateWaitingRoom(lobby);
-        });
-
-        socket.on('lobby_updated', (lobby) => {
-            currentLobby = lobby;
-            if (waitingRoomScreen.style.display === 'flex' || waitingRoomScreen.style.display === 'block') {
-                updateWaitingRoom(lobby);
-            }
-        });
-
-        socket.on('lobby_error', (data) => {
-            alert(data.message);
-        });
-
-        socket.on('game_started', () => {
-            hideAllScreens();
-            gameScreen.style.display = 'flex';
-            startTime = Date.now();
-            initGame();
-        });
-
-        const handleNewNumber = (data) => {
-            const num = typeof data === 'object' ? (data.number || data.value || Object.values(data)[0]) : data;
-            calledNumbers.push(Number(num));
-            document.getElementById('latest-number').textContent = 'Latest Number: ' + num;
-            speakNumber(num);
-        };
-
-        socket.on('new_number', handleNewNumber);
-
-        socket.on('game_over', (data) => {
-            clearInterval(gameTimer);
-            
-            gameScreen.style.display = 'none';
-            victoryScreen.style.display = 'flex';
-            
-            const winnerName = data.winner || 'Unknown';
-            const winTime = data.time || 0;
-            
-            document.getElementById('winner-info').innerHTML = 'Winner: ' + winnerName + '<br><br>Time: ' + winTime + ' seconds';
-
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance("BINGO! We have a winner!");
-                utterance.pitch = 1.2;
-                utterance.rate = 1.1;
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-    }
-
-    function updateWaitingRoom(lobby) {
-        if (!lobby) return;
-        const playerList = document.getElementById('player-list');
-        playerList.innerHTML = '';
-        lobby.players.forEach(p => {
-            const pEl = document.createElement('p');
-            pEl.textContent = p.name + (p.id === lobby.leader ? ' (Leader)' : '');
-            pEl.style.margin = '5px 0';
-            playerList.appendChild(pEl);
-        });
-
-        const startBtn = document.getElementById('start-game-btn');
-        if (socket.id === lobby.leader) {
-            startBtn.style.display = 'block';
-        } else {
-            startBtn.style.display = 'none';
-        }
-    }
+elements.joinForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const playerName = elements.playerName.value.trim();
+  if (!playerName) return;
+  localStorage.setItem('bingo.playerName', playerName);
+  socket.emit('join_lobby', { playerName });
+  setMessage(elements.joinMessage, 'Joining lobby...');
 });
 
-let currentGridSize = 5;
+elements.readyToggle.addEventListener('change', () => {
+  socket.emit('set_ready', { ready: elements.readyToggle.checked });
+});
 
-function initGame() {
-    const sizeSelect = document.getElementById('grid-size-select');
-    if (sizeSelect) {
-        currentGridSize = parseInt(sizeSelect.value, 10);
-    }
-    const bingoNumbers = generateBingoNumbers(currentGridSize * currentGridSize);
-    renderBoard(bingoNumbers, currentGridSize);
-    startTimer();
+elements.startButton.addEventListener('click', () => {
+  socket.emit('start_game');
+});
+
+elements.resetLobbyButton.addEventListener('click', () => {
+  socket.emit('reset_game');
+});
+
+elements.resetGameButton.addEventListener('click', () => {
+  socket.emit('reset_game');
+});
+
+elements.claimButton.addEventListener('click', () => {
+  socket.emit('claim_bingo', { markedIndexes: [...state.marked] });
+  setMessage(elements.gameMessage, 'Checking your card...');
+});
+
+elements.playAgainButton.addEventListener('click', () => {
+  showScreen('lobby');
+});
+
+socket.on('connect', () => {
+  setStatus(elements.socketStatus, 'Connected', 'ok');
+});
+
+socket.on('disconnect', () => {
+  setStatus(elements.socketStatus, 'Reconnecting', 'warn');
+});
+
+socket.on('lobby_state', (lobby) => {
+  state.lobby = lobby;
+  renderStatus();
+  renderLobby();
+  routeForPhase();
+});
+
+socket.on('player_state', (player) => {
+  state.player = player;
+  elements.readyToggle.checked = Boolean(player.ready);
+  renderCard(player.card || []);
+  renderLobby();
+  routeForPhase();
+});
+
+socket.on('game_countdown', ({ countdownMs }) => {
+  state.marked = new Set([12]);
+  clearMessage(elements.gameMessage);
+  state.countdownEndsAt = Date.now() + countdownMs;
+  startCountdownTicker();
+  showScreen('countdown');
+});
+
+socket.on('game_started', ({ startedAt }) => {
+  state.marked = new Set([12]);
+  clearMessage(elements.gameMessage);
+  renderCard(state.player?.card || []);
+  startGameTimer(startedAt);
+  showScreen('game');
+});
+
+socket.on('draw_progress', ({ calledCount }) => {
+  elements.calledCount.textContent = `${calledCount} called`;
+});
+
+socket.on('claim_rejected', ({ message }) => {
+  setMessage(elements.gameMessage, message, true);
+});
+
+socket.on('game_over', (winner) => {
+  stopTimers();
+  elements.winnerTitle.textContent = `${winner.name} wins`;
+  elements.winnerDetail.textContent = `Player ${winner.seat} finished in ${formatTime(winner.winTimeMs)}.`;
+  showScreen('winner');
+});
+
+socket.on('round_reset', () => {
+  stopTimers();
+  state.marked = new Set([12]);
+  clearMessage(elements.gameMessage);
+  if (state.player?.card) renderCard(state.player.card);
+});
+
+socket.on('action_error', ({ message }) => {
+  const target = currentScreen() === 'game' ? elements.gameMessage : elements.lobbyMessage;
+  setMessage(target, message, true);
+});
+
+function routeForPhase() {
+  if (!state.player) {
+    showScreen('join');
+    return;
+  }
+
+  if (!state.lobby) return;
+  if (state.lobby.phase === 'countdown') {
+    showScreen('countdown');
+  } else if (state.lobby.phase === 'playing') {
+    startGameTimer(state.lobby.startedAt);
+    showScreen('game');
+  } else if (state.lobby.phase === 'game_over' && state.lobby.winner) {
+    elements.winnerTitle.textContent = `${state.lobby.winner.name} wins`;
+    elements.winnerDetail.textContent = `Player ${state.lobby.winner.seat} finished in ${formatTime(state.lobby.winner.winTimeMs)}.`;
+    showScreen('winner');
+  } else {
+    showScreen('lobby');
+  }
 }
 
-function startTimer() {
-    gameTimer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        const secs = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('timer-display').textContent = 'Time: ' + mins + ':' + secs;
-    }, 1000);
+function renderStatus() {
+  if (!state.lobby) return;
+  const hardware = state.lobby.hardware?.connected;
+  setStatus(elements.hardwareStatus, hardware ? 'Console online' : 'Console offline', hardware ? 'ok' : 'warn');
+  elements.calledCount.textContent = `${state.lobby.calledCount || 0} called`;
 }
 
-function generateBingoNumbers(count) {
-    const numbers = new Set();
-    while (numbers.size < count) {
-        numbers.add(Math.floor(Math.random() * 100));
-    }
-    return Array.from(numbers);
+function renderLobby() {
+  if (!state.lobby) return;
+
+  elements.playersList.innerHTML = '';
+  for (let seat = 1; seat <= state.lobby.maxPlayers; seat += 1) {
+    const player = state.lobby.players.find((candidate) => candidate.seat === seat);
+    const row = document.createElement('div');
+    row.className = `player-row ${player ? 'filled' : ''}`;
+    row.innerHTML = player
+      ? `<span class="seat">P${seat}</span><strong>${escapeHtml(player.name)}</strong><span>${player.admin ? 'Admin' : player.ready ? 'Ready' : 'Waiting'}</span>`
+      : `<span class="seat">P${seat}</span><strong>Open seat</strong><span>Waiting</span>`;
+    elements.playersList.appendChild(row);
+  }
+
+  const amAdmin = state.player && state.lobby.adminId === state.player.id;
+  const full = state.lobby.players.length === state.lobby.maxPlayers;
+  const ready = state.lobby.players.every((player) => player.ready);
+  elements.startButton.hidden = !amAdmin;
+  elements.resetLobbyButton.hidden = !amAdmin;
+  elements.resetGameButton.hidden = !amAdmin;
+  elements.startButton.disabled = !(amAdmin && full && ready && state.lobby.hardware.connected);
+
+  if (!amAdmin) {
+    setMessage(elements.lobbyMessage, 'Waiting for the lobby admin to start.');
+  } else if (!state.lobby.hardware.connected) {
+    setMessage(elements.lobbyMessage, 'Connect the ESP32 arcade console before starting.', true);
+  } else if (!full) {
+    setMessage(elements.lobbyMessage, `Waiting for ${state.lobby.maxPlayers - state.lobby.players.length} more player(s).`);
+  } else if (!ready) {
+    setMessage(elements.lobbyMessage, 'All players need to mark ready.');
+  } else {
+    setMessage(elements.lobbyMessage, 'Ready to start.');
+  }
 }
 
-function renderBoard(numbers, size) {
-    const board = document.getElementById('bingo-grid');
-    board.style.gridTemplateColumns = 'repeat(' + size + ', 1fr)';
-    board.style.gridTemplateRows = 'repeat(' + size + ', 1fr)';
-    board.innerHTML = ''; 
-    
-    numbers.forEach((number, index) => {
-        const cell = document.createElement('div');
-        cell.className = 'bingo-cell';
-        cell.textContent = number;
-        cell.dataset.index = index;
-        cell.style.animationDelay = (index * 0.03) + 's'; 
-        
-        cell.addEventListener('click', () => {
-            const cellNum = parseInt(cell.innerText);
-            if (!calledNumbers.includes(cellNum)) return;
-            cell.classList.toggle('marked');
-            checkClaimEligibility(size);
-        });
-        
-        board.appendChild(cell);
-    });
+function renderCard(card) {
+  elements.bingoCard.innerHTML = '';
+  for (const [index, cell] of card.entries()) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `bingo-cell ${cell.free || state.marked.has(index) ? 'marked' : ''}`;
+    button.textContent = cell.value;
+    button.disabled = Boolean(cell.free);
+    button.setAttribute('aria-pressed', String(cell.free || state.marked.has(index)));
+    button.addEventListener('click', () => toggleCell(index, button));
+    elements.bingoCard.appendChild(button);
+  }
+  updateClaimButton();
 }
 
-function checkClaimEligibility(size) {
-    const cells = Array.from(document.querySelectorAll('.bingo-cell'));
-    const isMarked = (idx) => cells[idx].classList.contains('marked');
-    
-    let hasBingo = false;
-
-    for (let r = 0; r < size; r++) {
-        let rowWin = true;
-        for (let c = 0; c < size; c++) {
-            if (!isMarked(r * size + c)) rowWin = false;
-        }
-        if (rowWin) hasBingo = true;
-    }
-    
-    for (let c = 0; c < size; c++) {
-        let colWin = true;
-        for (let r = 0; r < size; r++) {
-            if (!isMarked(r * size + c)) colWin = false;
-        }
-        if (colWin) hasBingo = true;
-    }
-    
-    let diag1Win = true;
-    let diag2Win = true;
-    for (let i = 0; i < size; i++) {
-        if (!isMarked(i * size + i)) diag1Win = false;
-        if (!isMarked(i * size + (size - 1 - i))) diag2Win = false;
-    }
-    if (diag1Win || diag2Win) hasBingo = true;
-
-    document.getElementById('claim-btn').disabled = !hasBingo;
+function toggleCell(index, button) {
+  if (state.marked.has(index)) {
+    state.marked.delete(index);
+  } else {
+    state.marked.add(index);
+  }
+  button.classList.toggle('marked', state.marked.has(index));
+  button.setAttribute('aria-pressed', String(state.marked.has(index)));
+  updateClaimButton();
 }
 
-function speakNumber(num) {
-    if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance('Number ' + num);
-        window.speechSynthesis.speak(utterance);
-    }
+function updateClaimButton() {
+  elements.claimButton.disabled = !hasMarkedLine();
+}
+
+function hasMarkedLine() {
+  const lines = [];
+  for (let row = 0; row < 5; row += 1) lines.push([0, 1, 2, 3, 4].map((column) => row * 5 + column));
+  for (let column = 0; column < 5; column += 1) lines.push([0, 1, 2, 3, 4].map((row) => row * 5 + column));
+  lines.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
+  return lines.some((line) => line.every((index) => state.marked.has(index)));
+}
+
+function startCountdownTicker() {
+  clearInterval(state.countdownTimer);
+  state.countdownTimer = setInterval(() => {
+    const msLeft = Math.max(0, state.countdownEndsAt - Date.now());
+    const seconds = Math.ceil(msLeft / 1000);
+    elements.countdownValue.textContent = seconds > 0 ? seconds : 'GO';
+    if (msLeft <= 0) clearInterval(state.countdownTimer);
+  }, 150);
+}
+
+function startGameTimer(startedAt) {
+  if (!startedAt) return;
+  clearInterval(state.timer);
+  const tick = () => {
+    elements.timerDisplay.textContent = formatTime(Date.now() - startedAt);
+  };
+  tick();
+  state.timer = setInterval(tick, 250);
+}
+
+function stopTimers() {
+  clearInterval(state.timer);
+  clearInterval(state.countdownTimer);
+}
+
+function showScreen(name) {
+  Object.entries(screens).forEach(([screenName, element]) => {
+    element.classList.toggle('active', screenName === name);
+  });
+}
+
+function currentScreen() {
+  return Object.entries(screens).find(([, element]) => element.classList.contains('active'))?.[0] || 'join';
+}
+
+function setStatus(element, text, kind) {
+  element.textContent = text;
+  element.className = `status-pill ${kind}`;
+}
+
+function setMessage(element, text, isError = false) {
+  element.textContent = text;
+  element.classList.toggle('error', isError);
+}
+
+function clearMessage(element) {
+  setMessage(element, '');
+}
+
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }[char]));
 }
