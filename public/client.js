@@ -1,5 +1,6 @@
 const socket = io();
 
+// # Screen References
 const screens = {
   join: document.getElementById('join-screen'),
   lobby: document.getElementById('lobby-screen'),
@@ -8,6 +9,7 @@ const screens = {
   winner: document.getElementById('winner-screen'),
 };
 
+// # Browser State
 const state = {
   lobby: null,
   player: null,
@@ -17,6 +19,7 @@ const state = {
   countdownEndsAt: null,
 };
 
+// # Element References
 const elements = {
   socketStatus: document.getElementById('socket-status'),
   hardwareStatus: document.getElementById('hardware-status'),
@@ -40,6 +43,7 @@ const elements = {
   playAgainButton: document.getElementById('play-again-button'),
 };
 
+// # Form And Button Events
 elements.playerName.value = localStorage.getItem('bingo.playerName') || '';
 
 elements.joinForm.addEventListener('submit', (event) => {
@@ -76,6 +80,7 @@ elements.playAgainButton.addEventListener('click', () => {
   showScreen('lobby');
 });
 
+// # Server Connection Events
 socket.on('connect', () => {
   setStatus(elements.socketStatus, 'Connected', 'ok');
 });
@@ -84,6 +89,7 @@ socket.on('disconnect', () => {
   setStatus(elements.socketStatus, 'Reconnecting', 'warn');
 });
 
+// # Game Events From Server
 socket.on('lobby_state', (lobby) => {
   state.lobby = lobby;
   renderStatus();
@@ -142,6 +148,7 @@ socket.on('action_error', ({ message }) => {
   setMessage(target, message, true);
 });
 
+// # Screen Routing
 function routeForPhase() {
   if (!state.player) {
     showScreen('join');
@@ -163,6 +170,7 @@ function routeForPhase() {
   }
 }
 
+// # Lobby Rendering
 function renderStatus() {
   if (!state.lobby) return;
   const hardware = state.lobby.hardware?.connected;
@@ -205,6 +213,7 @@ function renderLobby() {
   }
 }
 
+// # Bingo Card Rendering
 function renderCard(card) {
   elements.bingoCard.innerHTML = '';
   for (const [index, cell] of card.entries()) {
@@ -231,6 +240,7 @@ function toggleCell(index, button) {
   updateClaimButton();
 }
 
+// # Bingo Claim Helpers
 function updateClaimButton() {
   elements.claimButton.disabled = !hasMarkedLine();
 }
@@ -243,6 +253,7 @@ function hasMarkedLine() {
   return lines.some((line) => line.every((index) => state.marked.has(index)));
 }
 
+// # Timers
 function startCountdownTicker() {
   clearInterval(state.countdownTimer);
   state.countdownTimer = setInterval(() => {
@@ -268,6 +279,7 @@ function stopTimers() {
   clearInterval(state.countdownTimer);
 }
 
+// # Small UI Helpers
 function showScreen(name) {
   Object.entries(screens).forEach(([screenName, element]) => {
     element.classList.toggle('active', screenName === name);

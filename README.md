@@ -1,22 +1,18 @@
 # Bingo Game Arcade
 
-Physical three-player Bingo arcade console with a Node.js lobby server, browser player UI, and ESP32 game-master firmware.
+Physical three-player Bingo arcade console with a browser lobby, an Arduino Uno hardware controller, and an ESP32U Wi-Fi bridge.
 
-## Architecture
+## Final Architecture
 
-- **Node.js server:** Express static hosting, Socket.IO for browser players, raw WebSocket endpoint at `/hardware` for the ESP32.
-- **Browser UI:** Players join the single physical arcade lobby, mark their own cards, and claim Bingo. Drawn numbers are never sent to browsers.
-- **ESP32 firmware:** Controls the 16x2 parallel LCD, active buzzer, WS2812B LED strip, DFPlayer Mini, two buttons, Wi-Fi, WebSocket reconnects, and LittleFS leaderboard storage.
+- `server.js` runs the Node.js web server.
+- `public/` contains the browser player interface.
+- `arduino_uno_controller/` is uploaded to the Arduino Uno. It controls the LCD, LEDs, DFPlayer Mini, buzzer, and buttons.
+- `esp32u_bridge/` is uploaded to the ESP32U. It connects to Wi-Fi, talks to Render, and forwards messages between the server and Arduino.
+- `audio/MP3/` contains the DFPlayer Mini audio files for numbers and winner announcements.
 
-## Important Design Decisions
+The old ESP-01S plan, one-board ESP32 firmware, simulator, and hardware test sketches were removed so this repo only shows the build we are actually wiring.
 
-- The server validates claims against the hidden called-number list, so browser clients cannot win by marking uncalled numbers.
-- The ESP32 is the visible game master: it draws numbers, displays them on the LCD, plays MP3 announcements, and sends only the drawn value to the server for validation.
-- DFPlayer Mini cannot synthesize arbitrary names. The firmware plays slot-based winner clips: `0101.mp3`, `0102.mp3`, and `0103.mp3`. The LCD still shows the winner's actual browser name.
-- A standard 5x5 Bingo card is used with a free center square and row/column/diagonal win lines.
-- The firmware intentionally uses `millis()` scheduling throughout; no `delay()` calls are used.
-
-## Web Server
+## Run The Web Server
 
 ```bash
 npm install
@@ -32,62 +28,59 @@ buildCommand: npm install
 startCommand: npm start
 ```
 
-If you need to demo without hardware, run:
+## Firmware Upload Order
 
-```bash
-npm run sim:hardware
-```
+1. Upload `arduino_uno_controller/arduino_uno_controller.ino` to the Arduino Uno.
+2. Upload `esp32u_bridge/esp32u_bridge.ino` to the ESP32U.
+3. Keep the ESP-01S disconnected. It is no longer part of the final build.
 
-Useful environment variables:
+The ESP32U Wi-Fi password is stored in `esp32u_bridge/wifi_config.h` on this computer. That file is ignored by Git. If another teammate clones the repo, they should copy `esp32u_bridge/wifi_config.example.h` to `esp32u_bridge/wifi_config.h` and fill in their own Wi-Fi details.
 
-- `PORT`: server port, defaults to `3000`.
-- `MAX_PLAYERS`: defaults to `3`.
-- `ALLOW_SOFTWARE_ONLY=true`: allows starting without ESP32 hardware connected.
-- `HARDWARE_WS_URL`: simulator target, defaults to `ws://localhost:3000/hardware`.
+## Arduino Uno Wiring
 
-## ESP32 Firmware
+| Part | Connect To |
+| --- | --- |
+| LCD I2C SDA | Arduino A4 |
+| LCD I2C SCL | Arduino A5 |
+| LCD VCC | Arduino 5V |
+| LCD GND | Breadboard GND |
+| LED strip DIN | Arduino D6 |
+| LED strip 5V | External 5V or Arduino 5V for short strip |
+| LED strip GND | Breadboard GND |
+| System button | Arduino D7 to GND |
+| Leaderboard button | Arduino D8 to GND |
+| Buzzer + | Arduino D9 |
+| Buzzer - | GND |
+| DFPlayer TX | Arduino D10 |
+| DFPlayer RX | Arduino D11 through 1k resistor |
+| DFPlayer VCC | 5V |
+| DFPlayer GND | GND |
+| Speaker + / - | DFPlayer SPK1 / SPK2 |
 
-Open the `arduino_firmware` sketch folder in Arduino IDE. The full firmware is in `main.ino`; `arduino_firmware.ino` is the small entry tab Arduino tooling expects.
+## ESP32U To Arduino Bridge Wiring
 
-Install these libraries:
+| Signal | Connect To |
+| --- | --- |
+| Arduino D3 TX | 1k resistor, then divider junction |
+| Divider junction | ESP32U GPIO4 |
+| Divider junction | 2.2k resistor to GND |
+| ESP32U GPIO17 | Arduino D2 RX |
+| ESP32U GND | Arduino/Breadboard GND |
 
-- WebSockets by Markus Sattler
-- ArduinoJson by Benoit Blanchon
-- FastLED
+The 1k and 2.2k resistors protect the ESP32U receive pin by reducing Arduino 5V serial down near 3.3V.
 
-Select an ESP32 board package and update these constants at the top of `main.ino`:
+## Audio Files
 
-```cpp
-const char* WIFI_SSID = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char* WS_HOST = "bingo.render";
-const uint16_t WS_PORT = 443;
-const bool WS_USE_SSL = true;
-```
+Copy the repo `audio/MP3` folder to the MicroSD card root so the card has:
 
-For local testing, use your computer's LAN IP, port `3000`, and `WS_USE_SSL = false`.
+- `/MP3/0001.mp3` through `/MP3/0075.mp3` for spoken Bingo numbers.
+- `/MP3/0101.mp3`, `/MP3/0102.mp3`, `/MP3/0103.mp3` for Player 1, 2, and 3 winner announcements.
 
-## DFPlayer Mini Files
+## Study Order
 
-Place files in the MicroSD `/MP3` folder:
+Start with `CODE_WALKTHROUGH.md` for the full feature and code explanation.
 
-- `0001.mp3` through `0075.mp3`: spoken number announcements.
-- `0101.mp3`: "Player 1 won".
-- `0102.mp3`: "Player 2 won".
-- `0103.mp3`: "Player 3 won".
-
-The repo keeps source/sample audio under `audio/MP3`.
-
-## Repo Layout
-
-- `server.js`: Node.js app and WebSocket game coordinator.
-- `public/`: browser player UI.
-- `arduino_firmware/`: production ESP32 firmware sketch.
-- `audio/MP3/`: DFPlayer Mini MP3 source files.
-- `hardware_tests/`: standalone wiring and peripheral test sketches.
-- `tools/`: local development helpers, including the fake ESP32 simulator.
-
-## Hardware Buttons
-
-- **System button:** short press resets the current round; long press for 5+ seconds soft-reboots the ESP32.
-- **Leaderboard button:** while idle, toggles the LCD Top 10 fastest wins from LittleFS.
+1. Read `server.js` to learn the game state machine and WebSocket rules.
+2. Read `public/index.html`, `public/client.js`, and `public/style.css` to learn the player UI.
+3. Read `esp32u_bridge/esp32u_bridge.ino` to learn Wi-Fi and server communication.
+4. Read `arduino_uno_controller/arduino_uno_controller.ino` to learn the physical arcade behavior.

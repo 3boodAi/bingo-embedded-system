@@ -13,3 +13,6 @@ build/
 
 # Generated/local audio backups
 audio/backup/
+
+# Local firmware secrets
+esp32u_bridge/wifi_config.h

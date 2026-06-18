@@ -4,6 +4,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 const { WebSocketServer, WebSocket } = require('ws');
 
+// # Configuration
 const PORT = process.env.PORT || 3000;
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 3);
 const CARD_SIZE = 5;
@@ -11,6 +12,7 @@ const MAX_BALL = 75;
 const COUNTDOWN_MS = 4500;
 const ALLOW_SOFTWARE_ONLY = process.env.ALLOW_SOFTWARE_ONLY === 'true';
 
+// # Server Setup
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -21,10 +23,12 @@ const io = new Server(server, {
 });
 const hardwareWss = new WebSocketServer({ noServer: true });
 
+// # HTTP Routes
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/healthz', (_req, res) => res.json({ ok: true, state: game.phase }));
 app.get('/api/status', (_req, res) => res.json(publicState()));
 
+// # Game State
 const game = {
   phase: 'idle',
   roundId: null,
@@ -45,6 +49,7 @@ const game = {
   },
 };
 
+// # Player And State Helpers
 function cleanName(name) {
   return String(name || '')
     .trim()
@@ -99,6 +104,7 @@ function broadcastState() {
   }
 }
 
+// # Hardware WebSocket Helpers
 function sendHardware(payload) {
   const socket = game.hardware.socket;
   if (!socket || socket.readyState !== WebSocket.OPEN) return false;
@@ -106,6 +112,7 @@ function sendHardware(payload) {
   return true;
 }
 
+// # Round Lifecycle
 function clearCountdownTimer() {
   if (game.timers.countdown) {
     clearTimeout(game.timers.countdown);
@@ -144,6 +151,7 @@ function nextSeat() {
   return null;
 }
 
+// # Bingo Card Generation
 function createBingoCard() {
   const ranges = [
     [1, 15],
@@ -178,6 +186,7 @@ function shuffle(values) {
   return values;
 }
 
+// # Game Actions
 function allPlayersReady() {
   return game.players.size === MAX_PLAYERS && [...game.players.values()].every((player) => player.ready);
 }
@@ -268,6 +277,7 @@ function claimBingo(socket, markedIndexes) {
   broadcastState();
 }
 
+// # Win Validation
 function validateClaim(card, markedIndexes) {
   const marked = new Set(
     Array.isArray(markedIndexes)
@@ -312,6 +322,7 @@ function getWinningLines() {
   return lines;
 }
 
+// # Hardware Message Handling
 function handleHardwareMessage(rawMessage) {
   let message;
   try {
@@ -352,6 +363,7 @@ function handleHardwareMessage(rawMessage) {
   }
 }
 
+// # Browser Socket.IO Handling
 io.on('connection', (socket) => {
   socket.emit('lobby_state', publicState());
 
@@ -432,6 +444,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// # Hardware WebSocket Upgrade
 server.on('upgrade', (request, socket, head) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   if (url.pathname !== '/hardware') return;
@@ -441,6 +454,7 @@ server.on('upgrade', (request, socket, head) => {
   });
 });
 
+// # Hardware WebSocket Connection
 hardwareWss.on('connection', (ws) => {
   if (game.hardware.socket && game.hardware.socket.readyState === WebSocket.OPEN) {
     game.hardware.socket.close(1012, 'New hardware connection opened.');
@@ -464,6 +478,7 @@ hardwareWss.on('connection', (ws) => {
   ws.on('error', (error) => console.error('Hardware websocket error:', error.message));
 });
 
+// # Start Server
 server.listen(PORT, () => {
   console.log(`Bingo arcade server listening on port ${PORT}`);
 });

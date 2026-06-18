@@ -1,12 +1,11 @@
 {
   "name": "bingo-embedded-system",
   "version": "1.0.0",
-  "description": "This is an embedded systems academic project for Bahçeşehir University. It implements an Interactive Bingo System connecting a physical hardware board with a web-based client interface.",
+  "description": "Embedded systems academic project for Bahcesehir University: a physical Bingo arcade console connected to a web lobby.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "sim:hardware": "node tools/fake-arduino.js",
-    "check": "node --check server.js && node --check public/client.js && node --check tools/fake-arduino.js",
+    "check": "node --check server.js && node --check public/client.js",
     "test": "npm run check"
   },
   "repository": {
@@ -27,7 +26,6 @@
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "ws": "^8.20.1"
   }
 }

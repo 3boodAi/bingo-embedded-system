@@ -8,9 +8,10 @@
   </head>
   <body>
     <main class="app-shell">
+      <!-- # Status Header -->
       <section class="topbar" aria-label="Arcade status">
         <div>
-          <p class="eyebrow">Sultan • Hussam • Abdullah</p>
+          <p class="eyebrow">Sultan / Hussam / Abdullah</p>
           <h1>Bingo Game Arcade</h1>
         </div>
         <div class="status-strip">
@@ -19,6 +20,7 @@
         </div>
       </section>
 
+      <!-- # Join Screen -->
       <section id="join-screen" class="panel active" aria-labelledby="join-title">
         <div class="panel-header">
           <p class="eyebrow">Arcade lobby</p>
@@ -34,6 +36,7 @@
         <p id="join-message" class="message"></p>
       </section>
 
+      <!-- # Lobby Screen -->
       <section id="lobby-screen" class="panel" aria-labelledby="lobby-title">
         <div class="panel-header">
           <p class="eyebrow">Waiting room</p>
@@ -51,12 +54,14 @@
         <p id="lobby-message" class="message"></p>
       </section>
 
+      <!-- # Countdown Screen -->
       <section id="countdown-screen" class="panel center" aria-live="polite">
         <p class="eyebrow">Hands on cards</p>
         <h2 id="countdown-value">3</h2>
         <p>The arcade console is starting the round.</p>
       </section>
 
+      <!-- # Game Screen -->
       <section id="game-screen" class="game-layout" aria-labelledby="game-title">
         <div class="game-info">
           <div>
@@ -76,6 +81,7 @@
         <p id="game-message" class="message"></p>
       </section>
 
+      <!-- # Winner Screen -->
       <section id="winner-screen" class="panel center" aria-live="polite">
         <p class="eyebrow">Game over</p>
         <h2 id="winner-title">Bingo!</h2>
