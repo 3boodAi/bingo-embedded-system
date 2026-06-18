@@ -26,6 +26,7 @@ const elements = {
   joinForm: document.getElementById('join-form'),
   playerName: document.getElementById('player-name'),
   joinMessage: document.getElementById('join-message'),
+  lobbyTitle: document.getElementById('lobby-title'),
   lobbyMessage: document.getElementById('lobby-message'),
   gameMessage: document.getElementById('game-message'),
   playersList: document.getElementById('players-list'),
@@ -181,6 +182,8 @@ function renderStatus() {
 function renderLobby() {
   if (!state.lobby) return;
 
+  elements.lobbyTitle.textContent =
+    state.lobby.maxPlayers === 1 ? 'Solo player, one console' : `${state.lobby.maxPlayers} players, one console`;
   elements.playersList.innerHTML = '';
   for (let seat = 1; seat <= state.lobby.maxPlayers; seat += 1) {
     const player = state.lobby.players.find((candidate) => candidate.seat === seat);
@@ -203,7 +206,7 @@ function renderLobby() {
   if (!amAdmin) {
     setMessage(elements.lobbyMessage, 'Waiting for the lobby admin to start.');
   } else if (!state.lobby.hardware.connected) {
-    setMessage(elements.lobbyMessage, 'Connect the ESP32 arcade console before starting.', true);
+    setMessage(elements.lobbyMessage, 'Connect the ESP32U arcade console before starting.', true);
   } else if (!full) {
     setMessage(elements.lobbyMessage, `Waiting for ${state.lobby.maxPlayers - state.lobby.players.length} more player(s).`);
   } else if (!ready) {
