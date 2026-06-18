@@ -1,6 +1,6 @@
 # Bingo Game Arcade
 
-Physical three-player Bingo arcade console with a browser lobby, an Arduino Uno hardware controller, and an ESP32U Wi-Fi bridge.
+Physical Bingo arcade console with a browser lobby, an Arduino Uno hardware controller, and an ESP32U Wi-Fi bridge. The current demo mode starts with 1 player.
 
 ## Final Architecture
 
@@ -20,6 +20,8 @@ npm start
 ```
 
 Open `http://localhost:3000`.
+
+The player count is controlled by `MAX_PLAYERS`. It is currently set to `1` in `render.yaml` for single-player testing. Change it back to `3` when the team wants the full three-player rule again.
 
 Render uses `render.yaml`:
 

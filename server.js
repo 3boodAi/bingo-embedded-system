@@ -6,7 +6,7 @@ const { WebSocketServer, WebSocket } = require('ws');
 
 // # Configuration
 const PORT = process.env.PORT || 3000;
-const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 3);
+const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 1);
 const CARD_SIZE = 5;
 const MAX_BALL = 75;
 const COUNTDOWN_MS = 4500;

@@ -88,10 +88,10 @@ const PORT = process.env.PORT || 3000;
 Uses Render's `PORT` environment variable, or `3000` locally.
 
 ```js
-const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 3);
+const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 1);
 ```
 
-Sets the lobby size. Default is 3 players.
+Sets the lobby size. Default is 1 player for the current demo. Render can override it with the `MAX_PLAYERS` environment variable.
 
 ```js
 const CARD_SIZE = 5;
@@ -324,7 +324,7 @@ Uses the Fisher-Yates shuffle to randomize arrays.
 function allPlayersReady() { ... }
 ```
 
-Returns true only if all 3 players joined and every player is ready.
+Returns true only if the required number of players joined and every player is ready.
 
 ```js
 function startGame(socket) { ... }
@@ -336,7 +336,7 @@ It checks:
 
 - The requester is admin.
 - No game is already running.
-- Exactly 3 players joined.
+- Exactly `MAX_PLAYERS` players joined. In the current demo, that means 1 player.
 - All players are ready.
 - Hardware is connected unless software-only mode is enabled.
 
