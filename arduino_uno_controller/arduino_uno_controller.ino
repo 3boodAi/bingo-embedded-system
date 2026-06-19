@@ -73,10 +73,12 @@ struct BeepStep {
 
 // # Buzzer Sequence
 const BeepStep countdownBeeps[] = {
-  {784, 500, 320},
-  {784, 500, 320},
-  {784, 500, 320},
-  {1175, 1500, 0},
+  {784, 220, 780},
+  {784, 220, 780},
+  {784, 220, 780},
+  {784, 220, 780},
+  {784, 220, 780},
+  {1175, 900, 0},
 };
 const uint8_t COUNTDOWN_BEEP_COUNT = sizeof(countdownBeeps) / sizeof(countdownBeeps[0]);
 

@@ -1754,7 +1754,7 @@ Stores one buzzer step: frequency, on time, off time.
 const BeepStep countdownBeeps[] = { ... };
 ```
 
-Three short beeps at 784 Hz and one long higher beep at 1175 Hz.
+Five short beeps at 784 Hz and one longer higher beep at 1175 Hz, matching the 5, 4, 3, 2, 1, GO countdown.
 
 ```cpp
 const uint8_t COUNTDOWN_BEEP_COUNT = ...
