@@ -36,6 +36,7 @@ const uint8_t ARDUINO_RX_PIN = 4;   // ESP32 receives from Arduino D3 through di
 const uint8_t ARDUINO_TX_PIN = 17;  // ESP32 sends to Arduino D2.
 const unsigned long HEARTBEAT_INTERVAL_MS = 15000;
 const unsigned long WIFI_STATUS_INTERVAL_MS = 5000;
+const unsigned long WIFI_RETRY_INTERVAL_MS = 20000;
 
 // # Hardware Objects
 WebSocketsClient webSocket;
@@ -45,6 +46,7 @@ String arduinoLine = "";
 bool wsConnected = false;
 unsigned long lastHeartbeatAt = 0;
 unsigned long lastWifiStatusAt = 0;
+unsigned long lastWifiRetryAt = 0;
 
 // # Small JSON Helpers
 String extractJsonString(const String& json, const String& key) {
@@ -162,6 +164,13 @@ void handleArduinoLine(const String& line) {
   }
 
   if (line == "HELLO") {
+    if (wsConnected) {
+      Serial2.println("NET:ONLINE");
+    } else if (WiFi.status() == WL_CONNECTED) {
+      Serial2.println("NET:OFFLINE");
+    } else {
+      Serial2.println("NET:WIFI_WAIT");
+    }
     sendHardwareHello();
   }
 }
@@ -187,11 +196,22 @@ void updateArduinoSerial() {
 // # Wi-Fi Watchdog
 void connectWiFiIfNeeded() {
   if (WiFi.status() == WL_CONNECTED) return;
-  if (millis() - lastWifiStatusAt < WIFI_STATUS_INTERVAL_MS) return;
 
-  lastWifiStatusAt = millis();
-  Serial.println("Wi-Fi waiting...");
-  Serial2.println("NET:WIFI_WAIT");
+  const unsigned long now = millis();
+  if (now - lastWifiStatusAt >= WIFI_STATUS_INTERVAL_MS) {
+    lastWifiStatusAt = now;
+    Serial.print("Wi-Fi waiting for SSID: ");
+    Serial.print(WIFI_SSID);
+    Serial.print(" status=");
+    Serial.println(WiFi.status());
+    Serial2.println("NET:WIFI_WAIT");
+  }
+
+  if (now - lastWifiRetryAt >= WIFI_RETRY_INTERVAL_MS) {
+    lastWifiRetryAt = now;
+    WiFi.disconnect(false);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  }
 }
 
 // # Setup
@@ -202,6 +222,8 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false);
+  Serial.print("Connecting to Wi-Fi SSID: ");
+  Serial.println(WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   webSocket.beginSSL(WS_HOST, WS_PORT, WS_PATH);
