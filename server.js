@@ -113,6 +113,18 @@ function broadcastState() {
   }
 }
 
+function pruneDisconnectedLobbyPlayers() {
+  if (game.phase === 'countdown' || game.phase === 'playing') return;
+  for (const [socketId, player] of game.players) {
+    if (!player.connected) game.players.delete(socketId);
+  }
+  assignAdmin();
+  if (!game.players.size) {
+    game.phase = 'idle';
+    game.adminId = null;
+  }
+}
+
 // # Hardware WebSocket Helpers
 function sendHardware(payload) {
   const socket = game.hardware.socket;
@@ -143,6 +155,7 @@ function resetRound(reason = 'reset') {
     player.card = createBingoCard();
     player.markedIndexes = new Set([12]);
   }
+  pruneDisconnectedLobbyPlayers();
   sendHardware({ type: 'reset', reason });
   io.emit('round_reset', { reason });
   broadcastState();
@@ -428,6 +441,8 @@ io.on('connection', (socket) => {
   socket.emit('lobby_state', publicState());
 
   socket.on('join_lobby', ({ playerName } = {}) => {
+    pruneDisconnectedLobbyPlayers();
+
     const existing = game.players.get(socket.id);
     if (existing) {
       existing.name = cleanName(playerName);
