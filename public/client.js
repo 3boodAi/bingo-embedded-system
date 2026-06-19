@@ -16,6 +16,7 @@ const state = {
   marked: new Set([12]),
   timer: null,
   countdownTimer: null,
+  countdownStartedAt: null,
   countdownEndsAt: null,
 };
 
@@ -110,6 +111,7 @@ socket.on('player_state', (player) => {
 socket.on('game_countdown', ({ countdownMs }) => {
   state.marked = new Set([12]);
   clearMessage(elements.gameMessage);
+  state.countdownStartedAt = Date.now();
   state.countdownEndsAt = Date.now() + countdownMs;
   startCountdownTicker();
   showScreen('countdown');
@@ -269,12 +271,16 @@ function hasMarkedLine() {
 // # Timers
 function startCountdownTicker() {
   clearInterval(state.countdownTimer);
-  state.countdownTimer = setInterval(() => {
+  const tick = () => {
     const msLeft = Math.max(0, state.countdownEndsAt - Date.now());
-    const seconds = Math.ceil(msLeft / 1000);
-    elements.countdownValue.textContent = seconds > 0 ? seconds : 'GO';
+    const elapsed = Math.max(0, Date.now() - state.countdownStartedAt);
+    const labels = ['5', '4', '3', '2', '1', 'GO'];
+    const step = Math.min(labels.length - 1, Math.floor(elapsed / 1000));
+    elements.countdownValue.textContent = labels[step];
     if (msLeft <= 0) clearInterval(state.countdownTimer);
-  }, 150);
+  };
+  tick();
+  state.countdownTimer = setInterval(tick, 150);
 }
 
 function startGameTimer(startedAt) {

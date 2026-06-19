@@ -106,10 +106,10 @@ const MAX_BALL = 75;
 Numbers go from 1 to 75.
 
 ```js
-const COUNTDOWN_MS = 4500;
+const COUNTDOWN_MS = 6000;
 ```
 
-Countdown phase lasts 4.5 seconds.
+Countdown phase lasts 6 seconds so the browser and DFPlayer countdown audio match: 5, 4, 3, 2, 1, GO.
 
 ```js
 const ALLOW_SOFTWARE_ONLY = process.env.ALLOW_SOFTWARE_ONLY === 'true';
@@ -690,10 +690,10 @@ Admin reset button while in lobby.
 Countdown screen. `aria-live` helps screen readers announce changes.
 
 ```html
-<h2 id="countdown-value">3</h2>
+<h2 id="countdown-value">5</h2>
 ```
 
-JavaScript changes this to 3, 2, 1, GO.
+JavaScript changes this to 5, 4, 3, 2, 1, GO.
 
 ### Game Screen
 
@@ -1090,10 +1090,10 @@ const msLeft = Math.max(0, ...)
 Never lets remaining time go below zero.
 
 ```js
-Math.ceil(msLeft / 1000)
+const labels = ['5', '4', '3', '2', '1', 'GO'];
 ```
 
-Shows 3, 2, 1 before GO.
+Shows the same countdown words as the DFPlayer track.
 
 ```js
 function startGameTimer(startedAt) { ... }
@@ -1680,7 +1680,7 @@ const unsigned long DRAW_INTERVAL_MS = 7000;
 Draw a number every 7 seconds.
 
 ```cpp
-const unsigned long DEFAULT_COUNTDOWN_MS = 4500;
+const unsigned long DEFAULT_COUNTDOWN_MS = 6000;
 ```
 
 Fallback countdown length.
@@ -1947,7 +1947,8 @@ In `PHASE_IDLE`:
 In `PHASE_COUNTDOWN`:
 
 - Saves countdown start time.
-- Shows `3...`.
+- Shows `5...`.
+- Plays the full countdown MP3.
 - Starts buzzer sequence.
 
 In `PHASE_PLAYING`:
@@ -2180,9 +2181,11 @@ Calculates countdown progress.
 
 Then LCD shows:
 
-- `3...` for first second.
-- `2...` for second second.
-- `1...` for third second.
+- `5...` for first second.
+- `4...` for second second.
+- `3...` for third second.
+- `2...` for fourth second.
+- `1...` for fifth second.
 - `GO!` until countdown finishes.
 
 After that:
@@ -2217,7 +2220,7 @@ Displays B/I/N/G/O label and number.
 playMp3Track(number);
 ```
 
-Plays `0001.mp3` through `0075.mp3`.
+Plays clean number-only files such as `0001.mp3` through `0075.mp3`.
 
 ```cpp
 espSerial.print("DRAW:");
@@ -2444,10 +2447,14 @@ DFPlayer expects files in `/MP3` on the MicroSD card.
 
 | File Range | Meaning |
 | --- | --- |
-| `0001.mp3` to `0075.mp3` | Spoken number announcements. |
-| `0101.mp3` | Player 1 won. |
-| `0102.mp3` | Player 2 won. |
-| `0103.mp3` | Player 3 won. |
+| `0000.mp3` to `0099.mp3` | Clean number-only announcements. |
+| `0200.mp3` | Bingo. |
+| `0201.mp3` | Player 1 won. |
+| `0202.mp3` | Player 2 won. |
+| `0203.mp3` | Player 3 won. |
+| `0204.mp3` | Good game. |
+| `0205.mp3` | Good luck. |
+| `0210.mp3` | Full 5, 4, 3, 2, 1, GO countdown. |
 
 Arduino calls:
 
@@ -2458,7 +2465,7 @@ playMp3Track(number);
 For drawn numbers.
 
 ```cpp
-playMp3Track(100 + winnerSeat);
+playMp3Track(TRACK_WIN_PLAYER_1 + winnerSeat - 1);
 ```
 
 For winner files.

@@ -8,7 +8,7 @@ Physical Bingo arcade console with a browser lobby, an Arduino Uno hardware cont
 - `public/` contains the browser player interface.
 - `arduino_uno_controller/` is uploaded to the Arduino Uno. It controls the LCD, LEDs, DFPlayer Mini, buzzer, and buttons.
 - `esp32u_bridge/` is uploaded to the ESP32U. It connects to Wi-Fi, talks to Render, and forwards messages between the server and Arduino.
-- `audio/MP3/` contains the DFPlayer Mini audio files for numbers and winner announcements.
+- `audio/MP3/` contains the DFPlayer Mini audio files for numbers, countdown, and winner announcements.
 
 The old ESP-01S plan, one-board ESP32 firmware, simulator, and hardware test sketches were removed so this repo only shows the build we are actually wiring.
 
@@ -75,8 +75,12 @@ The 1k and 2.2k resistors protect the ESP32U receive pin by reducing Arduino 5V 
 
 Copy the repo `audio/MP3` folder to the MicroSD card root so the card has:
 
-- `/MP3/0001.mp3` through `/MP3/0075.mp3` for spoken Bingo numbers.
-- `/MP3/0101.mp3`, `/MP3/0102.mp3`, `/MP3/0103.mp3` for Player 1, 2, and 3 winner announcements.
+- `/MP3/0000.mp3` through `/MP3/0099.mp3` for clean number-only announcements.
+- `/MP3/0200.mp3` for "Bingo".
+- `/MP3/0201.mp3`, `/MP3/0202.mp3`, `/MP3/0203.mp3` for Player 1, 2, and 3 winner announcements.
+- `/MP3/0204.mp3` for "Good game".
+- `/MP3/0205.mp3` for "Good luck".
+- `/MP3/0210.mp3` for the "5, 4, 3, 2, 1, go" countdown.
 
 ## Study Order
 

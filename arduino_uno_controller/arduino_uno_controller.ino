@@ -33,9 +33,14 @@ const uint8_t LCD_I2C_ADDRESS = 0x27;
 const uint16_t LED_COUNT = 30;
 const uint8_t MAX_BALL = 75;
 const unsigned long DRAW_INTERVAL_MS = 7000;
-const unsigned long DEFAULT_COUNTDOWN_MS = 4500;
+const unsigned long DEFAULT_COUNTDOWN_MS = 6000;
 const unsigned long LONG_PRESS_MS = 5000;
 const unsigned long DEBOUNCE_MS = 35;
+const uint16_t TRACK_BINGO = 200;
+const uint16_t TRACK_WIN_PLAYER_1 = 201;
+const uint16_t TRACK_GOOD_GAME = 204;
+const uint16_t TRACK_GOOD_LUCK = 205;
+const uint16_t TRACK_COUNTDOWN = 210;
 
 // # Hardware Objects
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 16, 2);
@@ -176,7 +181,8 @@ void setPhase(Phase nextPhase) {
     showLcd(espOnline ? "Console online" : "Console offline", "Waiting players");
   } else if (nextPhase == PHASE_COUNTDOWN) {
     countdownStartedAt = millis();
-    showLcd("Get ready", "3...");
+    showLcd("Get ready", "5...");
+    playMp3Track(TRACK_COUNTDOWN);
     startCountdownBuzzer();
   } else if (nextPhase == PHASE_PLAYING) {
     refillDrawBag();
@@ -184,7 +190,7 @@ void setPhase(Phase nextPhase) {
     showLcd("Game started", "Watch number");
   } else if (nextPhase == PHASE_GAME_OVER) {
     showLcd(compactName(winnerName), formatTime(winnerTimeMs));
-    playMp3Track(100 + winnerSeat);
+    playMp3Track(TRACK_WIN_PLAYER_1 + winnerSeat - 1);
     tone(BUZZER_PIN, 988);
     buzzerActive = true;
     gameOverStartedAt = millis();
@@ -374,10 +380,14 @@ void updateLeds() {
 void updateCountdown() {
   unsigned long elapsed = millis() - countdownStartedAt;
   if (elapsed < 1000) {
-    showLcd("Get ready", "3...");
+    showLcd("Get ready", "5...");
   } else if (elapsed < 2000) {
-    showLcd("Get ready", "2...");
+    showLcd("Get ready", "4...");
   } else if (elapsed < 3000) {
+    showLcd("Get ready", "3...");
+  } else if (elapsed < 4000) {
+    showLcd("Get ready", "2...");
+  } else if (elapsed < 5000) {
     showLcd("Get ready", "1...");
   } else if (elapsed < countdownDurationMs) {
     showLcd("Get ready", "GO!");

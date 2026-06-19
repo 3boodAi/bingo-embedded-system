@@ -129,7 +129,7 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
 
   if (messageType == "start_game") {
     String roundId = extractJsonString(message, "roundId");
-    long countdownMs = extractJsonLong(message, "countdownMs", 4500);
+    long countdownMs = extractJsonLong(message, "countdownMs", 6000);
     Serial2.println("START:" + roundId + ":" + String(countdownMs));
     return;
   }
