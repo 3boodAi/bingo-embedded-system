@@ -73,7 +73,7 @@ elements.resetGameButton.addEventListener('click', () => {
 });
 
 elements.claimButton.addEventListener('click', () => {
-  socket.emit('claim_bingo', { markedIndexes: [...state.marked] });
+  socket.emit('claim_bingo');
   setMessage(elements.gameMessage, 'Checking your card...');
 });
 
@@ -101,6 +101,7 @@ socket.on('lobby_state', (lobby) => {
 socket.on('player_state', (player) => {
   state.player = player;
   elements.readyToggle.checked = Boolean(player.ready);
+  state.marked = new Set(player.markedIndexes || [12]);
   renderCard(player.card || []);
   renderLobby();
   routeForPhase();
@@ -124,6 +125,17 @@ socket.on('game_started', ({ startedAt }) => {
 
 socket.on('draw_progress', ({ calledCount }) => {
   elements.calledCount.textContent = `${calledCount} called`;
+});
+
+socket.on('marks_updated', ({ markedIndexes }) => {
+  state.marked = new Set(markedIndexes || [12]);
+  renderCard(state.player?.card || []);
+  clearMessage(elements.gameMessage);
+});
+
+socket.on('mark_rejected', ({ message }) => {
+  setMessage(elements.gameMessage, message, true);
+  renderCard(state.player?.card || []);
 });
 
 socket.on('claim_rejected', ({ message }) => {
@@ -222,9 +234,9 @@ function renderCard(card) {
   for (const [index, cell] of card.entries()) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `bingo-cell ${cell.free || state.marked.has(index) ? 'marked' : ''}`;
+    button.className = `bingo-cell ${cell.free ? 'free' : ''} ${cell.free || state.marked.has(index) ? 'marked' : ''}`;
     button.textContent = cell.value;
-    button.disabled = Boolean(cell.free);
+    button.disabled = false;
     button.setAttribute('aria-pressed', String(cell.free || state.marked.has(index)));
     button.addEventListener('click', () => toggleCell(index, button));
     elements.bingoCard.appendChild(button);
@@ -233,14 +245,12 @@ function renderCard(card) {
 }
 
 function toggleCell(index, button) {
-  if (state.marked.has(index)) {
-    state.marked.delete(index);
-  } else {
-    state.marked.add(index);
-  }
-  button.classList.toggle('marked', state.marked.has(index));
-  button.setAttribute('aria-pressed', String(state.marked.has(index)));
-  updateClaimButton();
+  const cell = state.player?.card?.[index];
+  if (!cell || cell.free) return;
+
+  const shouldMark = !state.marked.has(index);
+  button.disabled = true;
+  socket.emit('mark_cell', { index, marked: shouldMark });
 }
 
 // # Bingo Claim Helpers

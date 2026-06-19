@@ -87,6 +87,7 @@ function publicState() {
 function playerState(socketId) {
   const player = game.players.get(socketId);
   if (!player) return null;
+  ensureMarkedIndexes(player);
   return {
     id: player.id,
     name: player.name,
@@ -94,7 +95,15 @@ function playerState(socketId) {
     ready: player.ready,
     admin: player.id === game.adminId,
     card: player.card,
+    markedIndexes: [...player.markedIndexes],
   };
+}
+
+function ensureMarkedIndexes(player) {
+  if (!(player.markedIndexes instanceof Set)) {
+    player.markedIndexes = new Set([12]);
+  }
+  player.markedIndexes.add(12);
 }
 
 function broadcastState() {
@@ -129,8 +138,10 @@ function resetRound(reason = 'reset') {
   game.endedAt = null;
   game.winner = null;
   for (const player of game.players.values()) {
+    ensureMarkedIndexes(player);
     player.ready = false;
     player.card = createBingoCard();
+    player.markedIndexes = new Set([12]);
   }
   sendHardware({ type: 'reset', reason });
   io.emit('round_reset', { reason });
@@ -220,6 +231,10 @@ function startGame(socket) {
   game.startedAt = null;
   game.endedAt = null;
   game.winner = null;
+  for (const player of game.players.values()) {
+    ensureMarkedIndexes(player);
+    player.markedIndexes = new Set([12]);
+  }
 
   sendHardware({
     type: 'start_game',
@@ -240,14 +255,15 @@ function startGame(socket) {
   }, COUNTDOWN_MS);
 }
 
-function claimBingo(socket, markedIndexes) {
+function claimBingo(socket) {
   const player = game.players.get(socket.id);
   if (!player || game.phase !== 'playing') {
     socket.emit('claim_rejected', { message: 'There is no active round to claim.' });
     return;
   }
+  ensureMarkedIndexes(player);
 
-  const result = validateClaim(player.card, markedIndexes);
+  const result = validateClaim(player.card, [...player.markedIndexes]);
   if (!result.ok) {
     socket.emit('claim_rejected', { message: result.message });
     return;
@@ -275,6 +291,47 @@ function claimBingo(socket, markedIndexes) {
 
   io.emit('game_over', game.winner);
   broadcastState();
+}
+
+function markCell(socket, index, marked) {
+  const player = game.players.get(socket.id);
+  if (!player) return;
+  ensureMarkedIndexes(player);
+
+  const cellIndex = Number(index);
+  if (!Number.isInteger(cellIndex) || cellIndex < 0 || cellIndex >= CARD_SIZE * CARD_SIZE) {
+    socket.emit('mark_rejected', { message: 'That square is not on your Bingo card.' });
+    return;
+  }
+
+  const cell = player.card[cellIndex];
+  if (!cell) return;
+
+  if (cell.free) {
+    player.markedIndexes.add(cellIndex);
+    socket.emit('marks_updated', { markedIndexes: [...player.markedIndexes] });
+    return;
+  }
+
+  if (marked === false) {
+    player.markedIndexes.delete(cellIndex);
+    socket.emit('marks_updated', { markedIndexes: [...player.markedIndexes] });
+    return;
+  }
+
+  if (game.phase !== 'playing') {
+    socket.emit('mark_rejected', { message: 'Wait until the round starts before marking numbers.' });
+    return;
+  }
+
+  const value = Number(cell.value);
+  if (!game.calledNumbers.includes(value)) {
+    socket.emit('mark_rejected', { message: `${value} has not been called by the arcade console yet.` });
+    return;
+  }
+
+  player.markedIndexes.add(cellIndex);
+  socket.emit('marks_updated', { markedIndexes: [...player.markedIndexes] });
 }
 
 // # Win Validation
@@ -345,7 +402,10 @@ function handleHardwareMessage(rawMessage) {
     const number = Number(message.number);
     if (game.phase !== 'playing') return;
     if (!Number.isInteger(number) || number < 1 || number > MAX_BALL) return;
-    if (game.calledNumbers.includes(number)) return;
+    if (game.calledNumbers.includes(number)) {
+      sendHardware({ type: 'duplicate_draw_ignored', number });
+      return;
+    }
 
     game.calledNumbers.push(number);
     io.emit('draw_progress', { calledCount: game.calledNumbers.length });
@@ -394,6 +454,7 @@ io.on('connection', (socket) => {
       ready: false,
       connected: true,
       card: createBingoCard(),
+      markedIndexes: new Set([12]),
       joinedAt: Date.now(),
     });
 
@@ -413,7 +474,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('start_game', () => startGame(socket));
-  socket.on('claim_bingo', ({ markedIndexes } = {}) => claimBingo(socket, markedIndexes));
+  socket.on('mark_cell', ({ index, marked } = {}) => markCell(socket, index, marked));
+  socket.on('claim_bingo', () => claimBingo(socket));
 
   socket.on('reset_game', () => {
     if (socket.id !== game.adminId) {
