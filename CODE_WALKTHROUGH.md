@@ -88,10 +88,10 @@ const PORT = process.env.PORT || 3000;
 Uses Render's `PORT` environment variable, or `3000` locally.
 
 ```js
-const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 1);
+const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 3);
 ```
 
-Sets the lobby size. Default is 1 player for the current demo. Render can override it with the `MAX_PLAYERS` environment variable.
+Sets the lobby size. Default is 3 players. Render can override it with the `MAX_PLAYERS` environment variable.
 
 ```js
 const CARD_SIZE = 5;
@@ -336,7 +336,7 @@ It checks:
 
 - The requester is admin.
 - No game is already running.
-- Exactly `MAX_PLAYERS` players joined. In the current demo, that means 1 player.
+- Exactly `MAX_PLAYERS` players joined. In the current setup, that means 3 players.
 - All players are ready.
 - Hardware is connected unless software-only mode is enabled.
 
